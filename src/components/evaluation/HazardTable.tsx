@@ -98,12 +98,12 @@ const HazardTable = () => {
   const [hoverColIdx, setHoverColIdx] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Auto-confirm timer
+  // Auto-confirm timer — fix metadata for AI auto-confirm
   useEffect(() => {
     const interval = setInterval(() => {
       setHazards((prev) =>
         prev.map((h) => {
-          if (h.status === "completed") return h;
+          if (h.status === "completed" || h.status === "human_locked") return h;
           const now = Date.now();
           const deadline = new Date(h.sla_deadline).getTime();
           if (now < deadline) return h;
@@ -112,7 +112,15 @@ const HazardTable = () => {
           const updated = { ...h };
           for (const f of fields) {
             if (!updated[f].locked && !updated[f].auto_confirmed) {
-              updated[f] = { ...updated[f], human_label: updated[f].ai_label, auto_confirmed: true, locked: true };
+              updated[f] = {
+                ...updated[f],
+                human_label: updated[f].ai_label,
+                auto_confirmed: true,
+                locked: true,
+                annotated_by: null, // System action, not human
+                annotated_at: new Date().toISOString(),
+                annotation_note: "Auto-confirmed by AI (SLA expired)",
+              };
               changed = true;
             }
           }
@@ -204,15 +212,22 @@ const HazardTable = () => {
 
   const updateLabel = useCallback(
     (taskId: string, field: "tbc" | "pspp" | "gr", humanLabel: string, note: string) => {
+      const isAutoConfirm = note.includes("Auto-confirmed by AI");
       setHazards((prev) =>
         prev.map((h) => {
           if (h.id !== taskId) return h;
           const updatedLabel: AILabel = {
-            ...h[field], human_label: humanLabel, annotation_note: note,
-            annotated_by: "FAUZAN AJI", annotated_at: new Date().toISOString(),
-            locked: true, auto_confirmed: false,
+            ...h[field],
+            human_label: humanLabel,
+            annotation_note: note,
+            annotated_by: isAutoConfirm ? null : "FAUZAN AJI",
+            annotated_at: new Date().toISOString(),
+            locked: true,
+            auto_confirmed: isAutoConfirm,
           };
-          const newStatus = h.status === "completed" ? "completed" : "in_progress";
+          const newStatus = isAutoConfirm ? "auto_confirmed" as const
+            : h.status === "completed" ? "completed" as const
+            : "human_locked" as const;
           return { ...h, [field]: updatedLabel, status: newStatus } as HazardTask;
         })
       );

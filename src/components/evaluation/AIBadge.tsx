@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Clock } from "lucide-react";
+import { Clock, Lock, Sparkles } from "lucide-react";
 import { AILabel } from "@/types/hazard";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -42,7 +42,7 @@ const AIBadge = ({ label, onClick, slaDeadline }: AIBadgeProps) => {
   }, [slaDeadline, label.locked, label.auto_confirmed]);
 
   const displayLabel = label.human_label || label.ai_label;
-  const isHuman = !!label.human_label && label.locked;
+  const isHuman = !!label.human_label && label.locked && !label.auto_confirmed;
   const isAutoConfirmed = label.auto_confirmed;
   const topCandidate = label.candidates?.[0];
   const relevance = topCandidate?.relevance ?? 0;
@@ -59,7 +59,6 @@ const AIBadge = ({ label, onClick, slaDeadline }: AIBadgeProps) => {
     );
   }
 
-  // Candidates quick-view for tooltip (used when not yet annotated)
   const candidatesTooltip = (
     <div className="space-y-1.5">
       <p className="font-semibold text-[11px] mb-1">Top AI Candidates</p>
@@ -76,24 +75,7 @@ const AIBadge = ({ label, onClick, slaDeadline }: AIBadgeProps) => {
     </div>
   );
 
-  // Timestamp tooltip for annotated/auto-confirmed
-  const annotatedTooltip = (
-    <div className="space-y-0.5">
-      <p className="font-semibold text-[11px]">{displayLabel}</p>
-      {isHuman && label.annotated_by && (
-        <p className="text-muted-foreground text-[10px]">Annotated by: {label.annotated_by}</p>
-      )}
-      {isAutoConfirmed && !isHuman && (
-        <p className="text-muted-foreground text-[10px]">Auto-confirmed by system</p>
-      )}
-      {label.annotated_at && (
-        <p className="text-muted-foreground text-[10px]">{new Date(label.annotated_at).toLocaleString()}</p>
-      )}
-      <p className="text-muted-foreground text-[10px]">Relevance: {relevance}%</p>
-    </div>
-  );
-
-  // Auto-confirmed badge — neutral colors, AI tag, relevance score
+  // Auto-confirmed badge — AI sparkle icon, system metadata
   if (isAutoConfirmed) {
     return (
       <TooltipProvider delayDuration={200}>
@@ -101,44 +83,60 @@ const AIBadge = ({ label, onClick, slaDeadline }: AIBadgeProps) => {
           <TooltipTrigger asChild>
             <div onClick={onClick} className={cn(BADGE_BASE, "border-border bg-muted/40 text-foreground cursor-pointer")}>
               <div className="flex items-center gap-1.5 w-full">
-                <span className={cn(TAG_BASE, "text-muted-foreground bg-muted")}>AI</span>
+                <Sparkles className="w-3 h-3 text-muted-foreground shrink-0" />
                 <span className="truncate font-medium text-left">{displayLabel}</span>
               </div>
-              <span className="text-[9px] text-muted-foreground pl-[26px]">Auto Confirmed · {relevance}%</span>
+              <span className="text-[9px] text-muted-foreground pl-[18px]">Auto-confirmed · {relevance}%</span>
             </div>
           </TooltipTrigger>
           <TooltipContent side="top" className="max-w-[260px] text-xs p-2.5">
-            {annotatedTooltip}
+            <div className="space-y-0.5">
+              <p className="font-semibold text-[11px]">Final Label: {displayLabel}</p>
+              <p className="text-muted-foreground text-[10px]">Confirmed by: System (AI Auto-Confirm)</p>
+              <p className="text-muted-foreground text-[10px]">Reason: SLA expired</p>
+              <p className="text-muted-foreground text-[10px]">Relevance score: {relevance}%</p>
+              {label.annotated_at && (
+                <p className="text-muted-foreground text-[10px]">{new Date(label.annotated_at).toLocaleString()}</p>
+              )}
+            </div>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
     );
   }
 
-  // Human-annotated badge — same neutral style as AI, with lock icon as text
+  // Human-locked badge — enterprise lock icon
   if (isHuman) {
     return (
       <TooltipProvider delayDuration={200}>
         <Tooltip>
           <TooltipTrigger asChild>
-            <div onClick={onClick} className={cn(BADGE_BASE, "border-border bg-muted/40 text-foreground cursor-pointer")}>
+            <div onClick={onClick} className={cn(BADGE_BASE, "border-primary/20 bg-primary/[0.04] text-foreground cursor-pointer")}>
               <div className="flex items-center gap-1.5 w-full">
-                <span className={cn(TAG_BASE, "text-muted-foreground bg-muted")}>HU</span>
+                <Lock className="w-3 h-3 text-primary shrink-0" />
                 <span className="truncate font-medium text-left">{displayLabel}</span>
-                <span className="text-[9px] ml-auto shrink-0 text-muted-foreground">🔒</span>
               </div>
-              <span className="text-[9px] text-muted-foreground pl-[26px]">Human Annotation</span>
+              <span className="text-[9px] text-muted-foreground pl-[18px]">Manual Review</span>
             </div>
           </TooltipTrigger>
           <TooltipContent side="top" className="max-w-[260px] text-xs p-2.5">
-            {annotatedTooltip}
+            <div className="space-y-0.5">
+              <p className="font-semibold text-[11px]">Final Label: {displayLabel}</p>
+              {label.annotated_by && (
+                <p className="text-muted-foreground text-[10px]">Confirmed by: {label.annotated_by}</p>
+              )}
+              {label.annotated_at && (
+                <p className="text-muted-foreground text-[10px]">{new Date(label.annotated_at).toLocaleString()}</p>
+              )}
+              <p className="text-muted-foreground text-[10px]">Relevance score: {relevance}%</p>
+            </div>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
     );
   }
 
-  // Pending AI badge — neutral, shows countdown + hover shows top 3 candidates
+  // Pending AI badge
   const timerColor = hoursLeft < 1 ? "text-destructive" : hoursLeft < 6 ? "text-warning" : "text-muted-foreground";
 
   return (

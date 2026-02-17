@@ -15,7 +15,7 @@ export interface AILabel {
   auto_confirmed: boolean;
 }
 
-export type EvaluationStatus = "ai_pending" | "in_progress" | "auto_confirmed" | "completed";
+export type EvaluationStatus = "ai_pending" | "in_progress" | "human_locked" | "auto_confirmed" | "completed";
 
 export interface HazardTask {
   id: string;
