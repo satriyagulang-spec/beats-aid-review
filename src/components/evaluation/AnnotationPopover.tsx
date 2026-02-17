@@ -2,18 +2,17 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AILabel, TBC_OPTIONS } from "@/types/hazard";
 import AIBadge from "./AIBadge";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { Lock, Timer } from "lucide-react";
+import { Lock, Timer, Sparkles, Check } from "lucide-react";
 
 interface AnnotationPopoverProps {
   label: AILabel;
-  fieldName?: string; // "TBC" | "PSPP" | "GR"
+  fieldName?: string;
   options?: string[];
   onApply: (humanLabel: string, note: string) => void;
   slaDeadline?: string;
@@ -30,13 +29,15 @@ const AnnotationPopover = ({ label, fieldName = "TBC", options, onApply, slaDead
   const [otherLabel, setOtherLabel] = useState("");
   const [selectionMode, setSelectionMode] = useState<SelectionMode>(null);
   const [reason, setReason] = useState("");
-  const [confirmOpen, setConfirmOpen] = useState(false);
   const [startTime] = useState(() => Date.now());
   const [progress, setProgress] = useState(100);
   const [timeLeftText, setTimeLeftText] = useState("");
   const [popoverStyle, setPopoverStyle] = useState<React.CSSProperties>({});
   const [autoLocked, setAutoLocked] = useState(false);
+  const [confirmStep, setConfirmStep] = useState<0 | 1>(0); // 0 = default, 1 = awaiting second click
+  const confirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const badgeRef = useRef<HTMLDivElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
 
   const setOpen = (v: boolean) => {
     setOpenState(v);
@@ -59,12 +60,11 @@ const AnnotationPopover = ({ label, fieldName = "TBC", options, onApply, slaDead
       setTimeLeftText(`${Math.floor(secs / 60)}m ${(secs % 60).toString().padStart(2, "0")}s`);
       if (remaining <= 0) {
         if (intervalId) clearInterval(intervalId);
-        // Auto-confirm with candidate 1
         if (!autoLocked && candidates[0]) {
           setAutoLocked(true);
-          onApply(candidates[0].label, "Auto-confirmed: SLA expired");
+          onApply(candidates[0].label, "Auto-confirmed by AI (SLA expired)");
           setOpen(false);
-          toast.info("SLA expired — auto-confirmed with top AI prediction");
+          toast.info("SLA expired — auto-confirmed by AI with top prediction");
         }
       }
     };
@@ -94,6 +94,7 @@ const AnnotationPopover = ({ label, fieldName = "TBC", options, onApply, slaDead
     setOtherLabel("");
     setSelectionMode(null);
     setReason("");
+    setConfirmStep(0);
     computePosition();
     setOpen(true);
   };
@@ -103,7 +104,6 @@ const AnnotationPopover = ({ label, fieldName = "TBC", options, onApply, slaDead
   const handleCandidateClick = useCallback((i: number) => {
     if (isLocked) return;
     if (selectionMode === "other") return;
-    // Candidate 1 (i===0) is not selectable as override — it's the default
     if (i === 0) return;
     if (selectedIndex === i) {
       setSelectedIndex(null);
@@ -132,16 +132,63 @@ const AnnotationPopover = ({ label, fieldName = "TBC", options, onApply, slaDead
       ? otherLabel
       : null;
 
-  // Notes only required when override is selected (candidate 2/3 or other)
   const hasOverride = selectionMode !== null;
   const canConfirm = selectedLabel !== null && reason.trim().length > 0;
 
-  const handleConfirm = () => {
-    if (selectedLabel) onApply(selectedLabel, reason);
-    setConfirmOpen(false);
-    setOpen(false);
-    toast.success("Annotation locked");
+  // 2-step inline confirm
+  const handleConfirmClick = () => {
+    if (!canConfirm) return;
+
+    if (confirmStep === 0) {
+      setConfirmStep(1);
+      if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
+      confirmTimerRef.current = setTimeout(() => {
+        setConfirmStep(0);
+      }, 2500);
+    } else {
+      // Second click — lock immediately
+      if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
+      if (selectedLabel) {
+        onApply(selectedLabel, reason);
+        setOpen(false);
+        toast.success(`Annotation locked to "${selectedLabel}"`, {
+          action: {
+            label: "Undo",
+            onClick: () => {
+              // Undo is informational — in real app would revert
+              toast.info("Undo not available in demo mode");
+            },
+          },
+          duration: 5000,
+        });
+      }
+    }
   };
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLTextAreaElement) return;
+      if (e.key === "Enter" && canConfirm) {
+        e.preventDefault();
+        handleConfirmClick();
+      }
+      if (e.ctrlKey && e.key === "z") {
+        e.preventDefault();
+        toast.info("Undo not available in demo mode");
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [open, canConfirm, confirmStep, selectedLabel, reason]);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
+    };
+  }, []);
 
   const urgencyColor = progress < 15 ? "text-destructive" : progress < 40 ? "text-warning" : "text-muted-foreground";
   const barColor = progress < 15 ? "bg-destructive" : progress < 40 ? "bg-warning" : "bg-primary";
@@ -164,13 +211,23 @@ const AnnotationPopover = ({ label, fieldName = "TBC", options, onApply, slaDead
         <>
           <div className="fixed inset-0 z-[55]" onClick={handleClose} />
           <div
+            ref={popoverRef}
             className="w-[640px] rounded-lg border bg-popover text-popover-foreground shadow-lg animate-in fade-in-0 zoom-in-95"
             style={popoverStyle}
           >
-            {isLocked && label.annotated_by && (
+            {isLocked && (
               <div className="px-3 py-2 bg-muted/50 border-b border-border flex items-center gap-2 text-[11px] text-muted-foreground rounded-t-lg">
-                <Lock className="w-3 h-3 shrink-0" />
-                <span>Locked by <strong>{label.annotated_by}</strong> · {label.annotated_at ? new Date(label.annotated_at).toLocaleString() : "N/A"}</span>
+                {label.auto_confirmed ? (
+                  <>
+                    <Sparkles className="w-3 h-3 shrink-0" />
+                    <span>Auto-confirmed · {label.annotated_at ? new Date(label.annotated_at).toLocaleString() : "N/A"}</span>
+                  </>
+                ) : (
+                  <>
+                    <Lock className="w-3 h-3 shrink-0" />
+                    <span>Confirmed by <strong>{label.annotated_by}</strong> · {label.annotated_at ? new Date(label.annotated_at).toLocaleString() : "N/A"}</span>
+                  </>
+                )}
               </div>
             )}
 
@@ -210,7 +267,7 @@ const AnnotationPopover = ({ label, fieldName = "TBC", options, onApply, slaDead
                                       isDimmed && "opacity-40"
                                     )}
                                   >
-                                    {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                                    {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-primary-foreground" />}
                                   </div>
                                 ) : (
                                   <div className="w-3.5 shrink-0" />
@@ -266,9 +323,9 @@ const AnnotationPopover = ({ label, fieldName = "TBC", options, onApply, slaDead
                   </div>
                 </div>
 
-                {/* RIGHT: Human Annotation */}
+                {/* RIGHT: Manual Review */}
                 <div className="flex-1 p-3 space-y-2.5 flex flex-col">
-                  <h4 className="text-xs font-semibold text-foreground">Human Annotation</h4>
+                  <h4 className="text-xs font-semibold text-foreground">Manual Review</h4>
 
                   <div>
                     <label className="text-[10px] font-medium text-muted-foreground mb-1 block">
@@ -300,16 +357,40 @@ const AnnotationPopover = ({ label, fieldName = "TBC", options, onApply, slaDead
                     </div>
                   </div>
 
-                  <div className="flex gap-2 justify-end pt-1 mt-auto">
-                    <Button variant="ghost" size="sm" className="text-xs h-7" onClick={handleClose}>Cancel</Button>
-                    <Button size="sm" className="text-xs h-7" onClick={() => canConfirm && setConfirmOpen(true)} disabled={!canConfirm}>
-                      Confirm Annotation
-                    </Button>
+                  {/* Inline 2-step confirm */}
+                  <div className="flex flex-col gap-1.5 pt-1 mt-auto">
+                    {confirmStep === 1 && (
+                      <p className="text-[10px] text-status-progress font-medium text-center animate-in fade-in-0">
+                        Click again to LOCK label
+                      </p>
+                    )}
+                    <div className="flex gap-2 justify-end">
+                      <Button variant="ghost" size="sm" className="text-xs h-7" onClick={handleClose}>Cancel</Button>
+                      <Button
+                        size="sm"
+                        className={cn(
+                          "text-xs h-7 transition-all",
+                          confirmStep === 1 && "bg-status-complete hover:bg-status-complete/90 text-primary-foreground"
+                        )}
+                        onClick={handleConfirmClick}
+                        disabled={!canConfirm}
+                      >
+                        {confirmStep === 0 ? (
+                          "Confirm Annotation"
+                        ) : (
+                          <span className="flex items-center gap-1">
+                            <Check className="w-3 h-3" />
+                            Confirm Lock
+                          </span>
+                        )}
+                      </Button>
+                    </div>
+                    <p className="text-[9px] text-muted-foreground text-right">Enter to confirm · Ctrl+Z to undo</p>
                   </div>
                 </div>
               </div>
             ) : (
-              /* LOCKED VIEW: show AI candidates + annotation history for traceability */
+              /* LOCKED VIEW */
               <div className="flex divide-x divide-border">
                 {/* LEFT: AI Candidates (read-only) */}
                 <div className="flex-1 p-3 space-y-2">
@@ -340,7 +421,8 @@ const AnnotationPopover = ({ label, fieldName = "TBC", options, onApply, slaDead
                 <div className="flex-1 p-3 space-y-2">
                   <h4 className="text-xs font-semibold text-foreground">Annotation History</h4>
                   <div className="text-[11px] space-y-1.5 bg-muted/30 rounded p-2.5 border border-border">
-                    {label.human_label && (
+                    {/* Human locked */}
+                    {label.human_label && !label.auto_confirmed && (
                       <>
                         <div className="flex items-center justify-between">
                           <span className="text-muted-foreground">Final Label</span>
@@ -348,7 +430,7 @@ const AnnotationPopover = ({ label, fieldName = "TBC", options, onApply, slaDead
                         </div>
                         {label.annotated_by && (
                           <div className="flex items-center justify-between">
-                            <span className="text-muted-foreground">Annotated by</span>
+                            <span className="text-muted-foreground">Confirmed by</span>
                             <span className="font-medium text-foreground">{label.annotated_by}</span>
                           </div>
                         )}
@@ -366,20 +448,34 @@ const AnnotationPopover = ({ label, fieldName = "TBC", options, onApply, slaDead
                         )}
                       </>
                     )}
-                    {label.auto_confirmed && !label.human_label && (
+                    {/* AI auto-confirmed */}
+                    {label.auto_confirmed && (
                       <>
                         <div className="flex items-center justify-between">
                           <span className="text-muted-foreground">Final Label</span>
-                          <span className="font-medium text-foreground">{label.ai_label}</span>
+                          <span className="font-medium text-foreground flex items-center gap-1">
+                            <Sparkles className="w-3 h-3 text-muted-foreground" />
+                            {label.human_label || label.ai_label}
+                          </span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">Method</span>
-                          <span className="text-foreground">Auto-confirmed by system</span>
+                          <span className="text-muted-foreground">Confirmed by</span>
+                          <span className="text-foreground">System (AI Auto-Confirm)</span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">Relevance</span>
+                          <span className="text-muted-foreground">Reason</span>
+                          <span className="text-foreground">SLA expired</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">Relevance score</span>
                           <span className="text-foreground">{relevance}%</span>
                         </div>
+                        {label.annotated_at && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">Timestamp</span>
+                            <span className="text-foreground">{new Date(label.annotated_at).toLocaleString()}</span>
+                          </div>
+                        )}
                       </>
                     )}
                   </div>
@@ -389,21 +485,6 @@ const AnnotationPopover = ({ label, fieldName = "TBC", options, onApply, slaDead
           </div>
         </>
       )}
-
-      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm human annotation?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action will <strong>LOCK</strong> the label to "<strong>{selectedLabel}</strong>". This cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirm}>Lock Annotation</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 };

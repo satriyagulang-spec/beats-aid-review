@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, ZoomIn, User } from "lucide-react";
+import { X, ZoomIn, Lock, Sparkles } from "lucide-react";
 import { HazardTask, AILabel } from "@/types/hazard";
 import StatusBadge from "./StatusBadge";
 import { Progress } from "@/components/ui/progress";
@@ -21,7 +21,6 @@ const TaskDrawer = ({ task, open, onClose }: TaskDrawerProps) => {
 
   return (
     <>
-      {/* LEFT Panel — no overlay, table remains interactive */}
       <div className="fixed left-0 top-0 bottom-0 w-[460px] bg-card z-50 shadow-2xl animate-slide-in-left flex flex-col border-r border-border">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-border shrink-0">
@@ -39,7 +38,7 @@ const TaskDrawer = ({ task, open, onClose }: TaskDrawerProps) => {
           </button>
         </div>
 
-        {/* Scrollable body — READ ONLY */}
+        {/* Scrollable body */}
         <div className="flex-1 overflow-auto p-4 space-y-4">
           {/* Image */}
           <div className="relative group cursor-pointer" onClick={() => setImageZoomed(!imageZoomed)}>
@@ -76,7 +75,7 @@ const TaskDrawer = ({ task, open, onClose }: TaskDrawerProps) => {
             </div>
           </section>
 
-          {/* AI TBC Candidates (Top 2) — read only */}
+          {/* AI TBC Candidates (Top 2) */}
           <section>
             <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">AI TBC Candidates</h4>
             <div className="space-y-2">
@@ -93,14 +92,14 @@ const TaskDrawer = ({ task, open, onClose }: TaskDrawerProps) => {
             </div>
           </section>
 
-          {/* Human Annotation (if exists) — read only */}
-          {(task.tbc.human_label || task.pspp.human_label || task.gr.human_label) && (
+          {/* Annotation History */}
+          {(task.tbc.locked || task.pspp.locked || task.gr.locked) && (
             <section>
-              <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Human Annotation</h4>
+              <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Annotation History</h4>
               <div className="space-y-1.5">
-                {task.tbc.human_label && <AnnotationRow title="TBC" label={task.tbc} />}
-                {task.pspp.human_label && <AnnotationRow title="PSPP" label={task.pspp} />}
-                {task.gr.human_label && <AnnotationRow title="GR" label={task.gr} />}
+                {task.tbc.locked && <AnnotationRow title="TBC" label={task.tbc} />}
+                {task.pspp.locked && <AnnotationRow title="PSPP" label={task.pspp} />}
+                {task.gr.locked && <AnnotationRow title="GR" label={task.gr} />}
               </div>
             </section>
           )}
@@ -124,21 +123,46 @@ const InfoRow = ({ label, value }: { label: string; value: string }) => (
   </div>
 );
 
-const AnnotationRow = ({ title, label }: { title: string; label: AILabel }) => (
-  <div className="p-2 rounded border border-human/15 bg-human/[0.03]">
-    <div className="flex items-center gap-1 text-[11px] font-medium text-human">
-      <User className="w-3 h-3" />
-      {title}: {label.human_label}
+const AnnotationRow = ({ title, label }: { title: string; label: AILabel }) => {
+  const isAutoConfirmed = label.auto_confirmed;
+  const displayLabel = label.human_label || label.ai_label;
+  const relevance = label.candidates?.[0]?.relevance ?? 0;
+
+  if (isAutoConfirmed) {
+    return (
+      <div className="p-2 rounded border border-border bg-muted/20">
+        <div className="flex items-center gap-1 text-[11px] font-medium text-foreground">
+          <Sparkles className="w-3 h-3 text-muted-foreground" />
+          {title}: {displayLabel}
+        </div>
+        <p className="text-[10px] text-muted-foreground mt-0.5">
+          Confirmed by: System (AI Auto-Confirm) · Relevance: {relevance}%
+        </p>
+        {label.annotated_at && (
+          <p className="text-[10px] text-muted-foreground">
+            {new Date(label.annotated_at).toLocaleString()}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-2 rounded border border-primary/15 bg-primary/[0.03]">
+      <div className="flex items-center gap-1 text-[11px] font-medium text-primary">
+        <Lock className="w-3 h-3" />
+        {title}: {displayLabel}
+      </div>
+      {label.annotated_by && (
+        <p className="text-[10px] text-muted-foreground mt-0.5">
+          Confirmed by {label.annotated_by} · {label.annotated_at ? new Date(label.annotated_at).toLocaleString() : ""}
+        </p>
+      )}
+      {label.annotation_note && (
+        <p className="text-[10px] text-muted-foreground italic mt-0.5">"{label.annotation_note}"</p>
+      )}
     </div>
-    {label.annotated_by && (
-      <p className="text-[10px] text-muted-foreground mt-0.5">
-        by {label.annotated_by} · {label.annotated_at ? new Date(label.annotated_at).toLocaleString() : ""}
-      </p>
-    )}
-    {label.annotation_note && (
-      <p className="text-[10px] text-muted-foreground italic mt-0.5">"{label.annotation_note}"</p>
-    )}
-  </div>
-);
+  );
+};
 
 export default TaskDrawer;
