@@ -1,0 +1,84 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@layer base {
+  :root {
+    --background: 210 20% 98%;
+    --foreground: 215 25% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 15%;
+
+    --primary: 211 65% 45%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 30% 95%;
+    --secondary-foreground: 215 25% 15%;
+
+    --muted: 210 20% 96%;
+    --muted-foreground: 215 15% 50%;
+
+    --accent: 211 65% 95%;
+    --accent-foreground: 211 65% 35%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 20% 90%;
+    --input: 214 20% 90%;
+    --ring: 211 65% 45%;
+
+    --radius: 0.5rem;
+
+    /* Custom tokens - subtle enterprise palette */
+    --ai-badge: 211 50% 55%;
+    --ai-badge-foreground: 211 60% 30%;
+    --human-badge: 270 40% 55%;
+    --human-badge-foreground: 270 45% 30%;
+    --status-pending: 215 15% 70%;
+    --status-progress: 40 65% 48%;
+    --status-complete: 142 45% 42%;
+    --surface-elevated: 0 0% 100%;
+    --warning: 30 80% 52%;
+
+    /* Enterprise white sidebar */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 215 15% 45%;
+    --sidebar-primary: 211 55% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 211 60% 96%;
+    --sidebar-accent-foreground: 211 55% 40%;
+    --sidebar-border: 214 20% 92%;
+    --sidebar-ring: 211 55% 48%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-full;
+  }
+}
