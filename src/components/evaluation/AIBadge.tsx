@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Clock, Lock, Sparkles } from "lucide-react";
+import { Clock, Lock, User } from "lucide-react";
 import { AILabel } from "@/types/hazard";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -8,6 +8,8 @@ interface AIBadgeProps {
   label: AILabel;
   onClick?: () => void;
   slaDeadline?: string;
+  disabled?: boolean;
+  editingBy?: string | null;
 }
 
 function getTimeRemaining(deadline: string): { hours: number; minutes: number; text: string } {
@@ -25,7 +27,7 @@ function getTimeRemaining(deadline: string): { hours: number; minutes: number; t
 const BADGE_BASE = "inline-flex flex-col items-start gap-0 px-2.5 py-1.5 rounded border text-[11px] font-normal w-[160px] min-w-[160px]";
 const TAG_BASE = "text-[9px] font-bold shrink-0 px-1 rounded";
 
-const AIBadge = ({ label, onClick, slaDeadline }: AIBadgeProps) => {
+const AIBadge = ({ label, onClick, slaDeadline, disabled, editingBy }: AIBadgeProps) => {
   const [timeText, setTimeText] = useState("");
   const [hoursLeft, setHoursLeft] = useState(999);
 
@@ -51,8 +53,8 @@ const AIBadge = ({ label, onClick, slaDeadline }: AIBadgeProps) => {
   if (!displayLabel) {
     return (
       <button
-        onClick={onClick}
-        className={cn(BADGE_BASE, "border-dashed border-border text-muted-foreground hover:bg-muted transition-colors cursor-pointer justify-center")}
+        onClick={disabled ? undefined : onClick}
+        className={cn(BADGE_BASE, "border-dashed border-border text-muted-foreground hover:bg-muted transition-colors justify-center", disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer")}
       >
         No label
       </button>
@@ -72,21 +74,23 @@ const AIBadge = ({ label, onClick, slaDeadline }: AIBadgeProps) => {
         </div>
       ))}
       {slaDeadline && <p className="text-muted-foreground text-[10px] pt-1 border-t border-border">⏱ {timeText}</p>}
+      {editingBy && <p className="text-destructive text-[10px] pt-1 border-t border-border">🔒 Being edited by {editingBy}</p>}
     </div>
   );
 
-  // Auto-confirmed badge — AI sparkle icon, system metadata
+  // Auto-confirmed badge — AI tag + label + lock icon on right
   if (isAutoConfirmed) {
     return (
       <TooltipProvider delayDuration={200}>
         <Tooltip>
           <TooltipTrigger asChild>
-            <div onClick={onClick} className={cn(BADGE_BASE, "border-border bg-muted/40 text-foreground cursor-pointer")}>
+            <div onClick={disabled ? undefined : onClick} className={cn(BADGE_BASE, "border-border bg-muted/40 text-foreground", disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer")}>
               <div className="flex items-center gap-1.5 w-full">
-                <Sparkles className="w-3 h-3 text-muted-foreground shrink-0" />
-                <span className="truncate font-medium text-left">{displayLabel}</span>
+                <span className={cn(TAG_BASE, "text-muted-foreground bg-muted")}>AI</span>
+                <span className="truncate font-medium text-left flex-1">{displayLabel}</span>
+                <Lock className="w-3 h-3 text-muted-foreground shrink-0" />
               </div>
-              <span className="text-[9px] text-muted-foreground pl-[18px]">Auto-confirmed · {relevance}%</span>
+              <span className="text-[9px] text-muted-foreground pl-[26px]">Auto-confirmed · {relevance}%</span>
             </div>
           </TooltipTrigger>
           <TooltipContent side="top" className="max-w-[260px] text-xs p-2.5">
@@ -105,18 +109,19 @@ const AIBadge = ({ label, onClick, slaDeadline }: AIBadgeProps) => {
     );
   }
 
-  // Human-locked badge — enterprise lock icon
+  // Human-locked badge — label + user icon + lock icon on right
   if (isHuman) {
     return (
       <TooltipProvider delayDuration={200}>
         <Tooltip>
           <TooltipTrigger asChild>
-            <div onClick={onClick} className={cn(BADGE_BASE, "border-primary/20 bg-primary/[0.04] text-foreground cursor-pointer")}>
+            <div onClick={disabled ? undefined : onClick} className={cn(BADGE_BASE, "border-primary/20 bg-primary/[0.04] text-foreground", disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer")}>
               <div className="flex items-center gap-1.5 w-full">
+                <span className="truncate font-medium text-left flex-1">{displayLabel}</span>
+                <User className="w-3 h-3 text-muted-foreground shrink-0" />
                 <Lock className="w-3 h-3 text-primary shrink-0" />
-                <span className="truncate font-medium text-left">{displayLabel}</span>
               </div>
-              <span className="text-[9px] text-muted-foreground pl-[18px]">Manual Review</span>
+              <span className="text-[9px] text-muted-foreground">Manual Review</span>
             </div>
           </TooltipTrigger>
           <TooltipContent side="top" className="max-w-[260px] text-xs p-2.5">
@@ -144,12 +149,12 @@ const AIBadge = ({ label, onClick, slaDeadline }: AIBadgeProps) => {
       <Tooltip>
         <TooltipTrigger asChild>
           <button
-            onClick={onClick}
-            className={cn(BADGE_BASE, "bg-background text-foreground border-border hover:bg-muted/40 transition-colors cursor-pointer")}
+            onClick={disabled ? undefined : onClick}
+            className={cn(BADGE_BASE, "bg-background text-foreground border-border transition-colors", disabled ? "cursor-not-allowed opacity-50" : "hover:bg-muted/40 cursor-pointer")}
           >
             <div className="flex items-center gap-1.5 w-full">
               <span className={cn(TAG_BASE, "text-muted-foreground bg-muted")}>AI</span>
-              <span className="truncate font-medium text-left">{displayLabel}</span>
+              <span className="truncate font-medium text-left flex-1">{displayLabel}</span>
             </div>
             <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground pl-[26px]">
               <span>{relevance}%</span>
@@ -160,6 +165,9 @@ const AIBadge = ({ label, onClick, slaDeadline }: AIBadgeProps) => {
                 </span>
               )}
             </div>
+            {editingBy && (
+              <span className="text-[8px] text-destructive pl-[26px]">🔒 {editingBy} editing</span>
+            )}
           </button>
         </TooltipTrigger>
         <TooltipContent side="top" className="max-w-[280px] text-xs p-2.5">
