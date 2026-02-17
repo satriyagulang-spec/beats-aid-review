@@ -487,6 +487,8 @@ const HazardTable = () => {
                           fieldName="TBC"
                           slaDeadline={h.sla_deadline}
                           onApply={(lbl, note) => updateLabel(h.id, "tbc", lbl, note)}
+                          disabled={editingLabel !== null && !(editingLabel.taskId === h.id && editingLabel.field === "tbc")}
+                          editingBy={editingLabel?.taskId === h.id && editingLabel?.field === "tbc" ? null : editingLabel ? "FAUZAN AJI" : null}
                           onOpenChange={(isOpen) => {
                             if (isOpen) setEditingLabel({ taskId: h.id, field: "tbc" });
                             else if (editingLabel?.taskId === h.id && editingLabel?.field === "tbc") setEditingLabel(null);
@@ -504,6 +506,8 @@ const HazardTable = () => {
                           fieldName="PSPP"
                           slaDeadline={h.sla_deadline}
                           onApply={(lbl, note) => updateLabel(h.id, "pspp", lbl, note)}
+                          disabled={editingLabel !== null && !(editingLabel.taskId === h.id && editingLabel.field === "pspp")}
+                          editingBy={editingLabel?.taskId === h.id && editingLabel?.field === "pspp" ? null : editingLabel ? "FAUZAN AJI" : null}
                           onOpenChange={(isOpen) => {
                             if (isOpen) setEditingLabel({ taskId: h.id, field: "pspp" });
                             else if (editingLabel?.taskId === h.id && editingLabel?.field === "pspp") setEditingLabel(null);
@@ -521,6 +525,8 @@ const HazardTable = () => {
                           fieldName="GR"
                           slaDeadline={h.sla_deadline}
                           onApply={(lbl, note) => updateLabel(h.id, "gr", lbl, note)}
+                          disabled={editingLabel !== null && !(editingLabel.taskId === h.id && editingLabel.field === "gr")}
+                          editingBy={editingLabel?.taskId === h.id && editingLabel?.field === "gr" ? null : editingLabel ? "FAUZAN AJI" : null}
                           onOpenChange={(isOpen) => {
                             if (isOpen) setEditingLabel({ taskId: h.id, field: "gr" });
                             else if (editingLabel?.taskId === h.id && editingLabel?.field === "gr") setEditingLabel(null);

@@ -8,7 +8,7 @@ import { AILabel, TBC_OPTIONS } from "@/types/hazard";
 import AIBadge from "./AIBadge";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { Lock, Timer, Sparkles, Check } from "lucide-react";
+import { Lock, Timer, Sparkles, Check, User } from "lucide-react";
 
 interface AnnotationPopoverProps {
   label: AILabel;
@@ -17,13 +17,16 @@ interface AnnotationPopoverProps {
   onApply: (humanLabel: string, note: string) => void;
   slaDeadline?: string;
   onOpenChange?: (open: boolean) => void;
+  disabled?: boolean;
+  editingBy?: string | null;
+  currentUser?: string;
 }
 
 const SLA_DURATION_MS = 60_000;
 
 type SelectionMode = "candidate" | "other" | null;
 
-const AnnotationPopover = ({ label, fieldName = "TBC", options, onApply, slaDeadline, onOpenChange }: AnnotationPopoverProps) => {
+const AnnotationPopover = ({ label, fieldName = "TBC", options, onApply, slaDeadline, onOpenChange, disabled, editingBy, currentUser = "FAUZAN AJI" }: AnnotationPopoverProps) => {
   const [open, setOpenState] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [otherLabel, setOtherLabel] = useState("");
@@ -90,6 +93,7 @@ const AnnotationPopover = ({ label, fieldName = "TBC", options, onApply, slaDead
   }, []);
 
   const handleOpen = () => {
+    if (disabled) return;
     setSelectedIndex(null);
     setOtherLabel("");
     setSelectionMode(null);
@@ -202,8 +206,8 @@ const AnnotationPopover = ({ label, fieldName = "TBC", options, onApply, slaDead
   return (
     <>
       <div className="relative inline-block" ref={badgeRef}>
-        <div onClick={open ? handleClose : handleOpen} className="cursor-pointer">
-          <AIBadge label={label} slaDeadline={slaDeadline} />
+        <div onClick={open ? handleClose : handleOpen} className={disabled ? "cursor-not-allowed" : "cursor-pointer"}>
+          <AIBadge label={label} slaDeadline={slaDeadline} disabled={disabled} editingBy={editingBy} />
         </div>
       </div>
 
@@ -212,9 +216,16 @@ const AnnotationPopover = ({ label, fieldName = "TBC", options, onApply, slaDead
           <div className="fixed inset-0 z-[55]" onClick={handleClose} />
           <div
             ref={popoverRef}
-            className="w-[640px] rounded-lg border bg-popover text-popover-foreground shadow-lg animate-in fade-in-0 zoom-in-95"
+            className="w-[640px] rounded-lg border bg-popover text-popover-foreground shadow-lg animate-in fade-in-0 zoom-in-95 overflow-hidden"
             style={popoverStyle}
           >
+            {/* Current editor banner */}
+            {!isLocked && (
+              <div className="px-3 py-1.5 bg-primary/[0.06] border-b border-border flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                <User className="w-3 h-3 text-primary shrink-0" />
+                <span>Editing by <strong className="text-foreground">{currentUser}</strong></span>
+              </div>
+            )}
             {isLocked && (
               <div className="px-3 py-2 bg-muted/50 border-b border-border flex items-center gap-2 text-[11px] text-muted-foreground rounded-t-lg">
                 {label.auto_confirmed ? (
