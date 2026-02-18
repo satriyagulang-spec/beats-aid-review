@@ -117,7 +117,7 @@ const HazardTable = () => {
                 human_label: updated[f].ai_label,
                 auto_confirmed: true,
                 locked: true,
-                annotated_by: null, // System action, not human
+                annotated_by: null,
                 annotated_at: new Date().toISOString(),
                 annotation_note: "Auto-confirmed by AI (SLA expired)",
               };
@@ -137,8 +137,10 @@ const HazardTable = () => {
     return {
       sites: unique(hazards.map(h => h.site)),
       lokasi: unique(hazards.map(h => h.lokasi)),
+      detail_location: unique(hazards.map(h => h.detail_location)),
       ketidaksesuaian: unique(hazards.map(h => h.ketidaksesuaian)),
       sub_ketidaksesuaian: unique(hazards.map(h => h.sub_ketidaksesuaian)),
+      pic_perusahaan: unique(hazards.map(h => h.pic_perusahaan)),
       tbcLabels: unique(hazards.map(h => getLabelText(h.tbc))),
       psppLabels: unique(hazards.map(h => getLabelText(h.pspp))),
       grLabels: unique(hazards.map(h => getLabelText(h.gr))),
@@ -150,25 +152,15 @@ const HazardTable = () => {
       if (search) {
         if (!h.id.toLowerCase().includes(search.toLowerCase())) return false;
       }
+      if (filters.pic_perusahaan.length && !filters.pic_perusahaan.includes(h.pic_perusahaan)) return false;
       if (filters.site.length && !filters.site.includes(h.site)) return false;
       if (filters.lokasi.length && !filters.lokasi.includes(h.lokasi)) return false;
+      if (filters.detail_location.length && !filters.detail_location.includes(h.detail_location)) return false;
       if (filters.ketidaksesuaian.length && !filters.ketidaksesuaian.includes(h.ketidaksesuaian)) return false;
       if (filters.sub_ketidaksesuaian.length && !filters.sub_ketidaksesuaian.includes(h.sub_ketidaksesuaian)) return false;
       if (filters.tbc.length && !filters.tbc.includes(getLabelText(h.tbc))) return false;
       if (filters.pspp.length && !filters.pspp.includes(getLabelText(h.pspp))) return false;
       if (filters.gr.length && !filters.gr.includes(getLabelText(h.gr))) return false;
-      if (filters.confidence) {
-        const minRel = getMinRelevance(h);
-        if (filters.confidence === "0-50" && minRel >= 50) return false;
-        if (filters.confidence === "50-70" && (minRel < 50 || minRel >= 70)) return false;
-        if (filters.confidence === "70-100" && minRel < 70) return false;
-      }
-      if (filters.timeRemaining) {
-        const hrs = getHoursLeft(h.sla_deadline);
-        if (filters.timeRemaining === "<6h" && hrs >= 6) return false;
-        if (filters.timeRemaining === "<24h" && hrs >= 24) return false;
-        if (filters.timeRemaining === ">24h" && hrs < 24) return false;
-      }
       return true;
     });
 
@@ -256,6 +248,17 @@ const HazardTable = () => {
   const openDrawer = (task: HazardTask) => {
     setDrawerTask(task);
     setDrawerOpen(true);
+  };
+
+  // Toggle active row on click (click again to deactivate)
+  const toggleActiveRow = (taskId: string) => {
+    if (activeRowId === taskId) {
+      setActiveRowId(null);
+      setActiveColIdx(null);
+    } else {
+      setActiveRowId(taskId);
+      setActiveColIdx(null);
+    }
   };
 
   const activeRow = useMemo(() => filtered.find(h => h.id === activeRowId) ?? null, [filtered, activeRowId]);
@@ -346,15 +349,31 @@ const HazardTable = () => {
 
       {/* Formula Bar - Active Row Info */}
       {activeRow && (
-        <div className="bg-card border border-border rounded-t-lg px-3 py-2 flex items-center gap-3 text-xs">
-          <span className="font-mono font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded text-[11px]">
+        <div className="bg-card border border-border rounded-t-lg px-3 py-2 flex items-start gap-3 text-xs">
+          <span className="font-mono font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded text-[11px] shrink-0">
             {activeRow.id}
           </span>
-          <div className="w-px h-4 bg-border" />
-          <span className="text-muted-foreground font-medium shrink-0">Description:</span>
-          <span className="text-foreground truncate">{activeRow.description}</span>
-          <div className="w-px h-4 bg-border ml-auto" />
-          <span className="text-muted-foreground shrink-0">{activeRow.site} · {activeRow.lokasi}</span>
+          <div className="flex-1 min-w-0 space-y-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-muted-foreground shrink-0">{activeRow.pic_perusahaan}</span>
+              <span className="text-border">·</span>
+              <span className="text-muted-foreground">{activeRow.site}</span>
+              <span className="text-border">·</span>
+              <span className="text-muted-foreground">{activeRow.lokasi}</span>
+              <span className="text-border">·</span>
+              <span className="text-muted-foreground">{activeRow.detail_location}</span>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-muted-foreground font-medium shrink-0">Ketidaksesuaian:</span>
+              <span className="text-foreground">{activeRow.ketidaksesuaian}</span>
+              <span className="text-border">·</span>
+              <span className="text-foreground">{activeRow.sub_ketidaksesuaian}</span>
+            </div>
+            <div>
+              <span className="text-muted-foreground font-medium shrink-0">Desc: </span>
+              <span className="text-foreground">{activeRow.description}</span>
+            </div>
+          </div>
         </div>
       )}
 
@@ -414,7 +433,7 @@ const HazardTable = () => {
                   const isOtherEditing = editingLabel && (editingLabel.taskId !== h.id || editingLabel.field !== field);
                   return cn(
                     cellClass(colIdx),
-                    "whitespace-nowrap", // labels always nowrap
+                    "whitespace-nowrap",
                     isThisEditing && "bg-primary/[0.08] ring-2 ring-inset ring-primary/30 shadow-sm",
                     isOtherEditing && isBeingEdited && "opacity-60"
                   );
@@ -422,11 +441,18 @@ const HazardTable = () => {
 
                 const globalRowIndex = (currentPage - 1) * PAGE_SIZE + rowIndex + 1;
 
+                // When label is clicked, activate that row
+                const handleLabelOpen = (taskId: string, field: "tbc" | "pspp" | "gr") => {
+                  setActiveRowId(taskId);
+                  setActiveColIdx(null);
+                  setEditingLabel({ taskId, field });
+                };
+
                 return (
                   <tr
                     key={h.id}
                     data-active={isActive ? "true" : undefined}
-                    onClick={() => { setActiveRowId(h.id); setActiveColIdx(null); }}
+                    onClick={() => toggleActiveRow(h.id)}
                     className={cn(
                       "transition-colors cursor-pointer",
                       !isActive && isLowRelevance && !isDimmed && "bg-destructive/[0.03]",
@@ -444,34 +470,34 @@ const HazardTable = () => {
                     )}>
                       {globalRowIndex}
                     </td>
-                    <td className={cellClass(0)} onClick={(e) => { e.stopPropagation(); setActiveRowId(h.id); setActiveColIdx(0); }}>
+                    <td className={cellClass(0)} onClick={(e) => { e.stopPropagation(); toggleActiveRow(h.id); setActiveColIdx(0); }}>
                       <div className="flex items-center gap-1.5 font-medium text-foreground">
                         {isLowRelevance && <span className="w-1.5 h-1.5 rounded-full bg-destructive shrink-0" />}
                         {h.id}
                       </div>
                     </td>
-                    <td className={cn(cellClass(1), "text-muted-foreground")} onClick={(e) => { e.stopPropagation(); setActiveRowId(h.id); setActiveColIdx(1); }}>
+                    <td className={cn(cellClass(1), "text-muted-foreground")} onClick={(e) => { e.stopPropagation(); toggleActiveRow(h.id); setActiveColIdx(1); }}>
                       {h.timestamp}
                     </td>
-                    <td className={cellClass(2)} onClick={(e) => { e.stopPropagation(); setActiveRowId(h.id); setActiveColIdx(2); }}>
+                    <td className={cellClass(2)} onClick={(e) => { e.stopPropagation(); toggleActiveRow(h.id); setActiveColIdx(2); }}>
                       {expanded ? <span className="text-foreground">{h.pic_perusahaan}</span> : <TruncatedCell text={h.pic_perusahaan} />}
                     </td>
-                    <td className={cn(cellClass(3), "text-foreground")} onClick={(e) => { e.stopPropagation(); setActiveRowId(h.id); setActiveColIdx(3); }}>
+                    <td className={cn(cellClass(3), "text-foreground")} onClick={(e) => { e.stopPropagation(); toggleActiveRow(h.id); setActiveColIdx(3); }}>
                       {h.site}
                     </td>
-                    <td className={cn(cellClass(4), "text-foreground")} onClick={(e) => { e.stopPropagation(); setActiveRowId(h.id); setActiveColIdx(4); }}>
+                    <td className={cn(cellClass(4), "text-foreground")} onClick={(e) => { e.stopPropagation(); toggleActiveRow(h.id); setActiveColIdx(4); }}>
                       {h.lokasi}
                     </td>
-                    <td className={cn(cellClass(5), "text-muted-foreground")} onClick={(e) => { e.stopPropagation(); setActiveRowId(h.id); setActiveColIdx(5); }}>
+                    <td className={cn(cellClass(5), "text-muted-foreground")} onClick={(e) => { e.stopPropagation(); toggleActiveRow(h.id); setActiveColIdx(5); }}>
                       {expanded ? <span>{h.detail_location}</span> : <TruncatedCell text={h.detail_location} maxWidth="max-w-[120px]" />}
                     </td>
-                    <td className={cn(cellClass(6), "text-muted-foreground")} onClick={(e) => { e.stopPropagation(); setActiveRowId(h.id); setActiveColIdx(6); }}>
+                    <td className={cn(cellClass(6), "text-muted-foreground")} onClick={(e) => { e.stopPropagation(); toggleActiveRow(h.id); setActiveColIdx(6); }}>
                       {expanded ? <span>{h.ketidaksesuaian}</span> : <TruncatedCell text={h.ketidaksesuaian} />}
                     </td>
-                    <td className={cn(cellClass(7), "text-muted-foreground")} onClick={(e) => { e.stopPropagation(); setActiveRowId(h.id); setActiveColIdx(7); }}>
+                    <td className={cn(cellClass(7), "text-muted-foreground")} onClick={(e) => { e.stopPropagation(); toggleActiveRow(h.id); setActiveColIdx(7); }}>
                       {expanded ? <span>{h.sub_ketidaksesuaian}</span> : <TruncatedCell text={h.sub_ketidaksesuaian} />}
                     </td>
-                    <td className={cn(cellClass(8), "text-muted-foreground")} onClick={(e) => { e.stopPropagation(); setActiveRowId(h.id); setActiveColIdx(8); }}>
+                    <td className={cn(cellClass(8), "text-muted-foreground")} onClick={(e) => { e.stopPropagation(); toggleActiveRow(h.id); setActiveColIdx(8); }}>
                       {expanded ? <span>{h.description}</span> : <TruncatedCell text={h.description} maxWidth="max-w-[150px]" />}
                     </td>
                     <td className={cellClass(9)} onClick={(e) => e.stopPropagation()}>
@@ -480,7 +506,9 @@ const HazardTable = () => {
                     <td className={labelCellClass(10, "tbc")} onClick={(e) => e.stopPropagation()}>
                       <div className="relative">
                         {editingLabel?.taskId === h.id && editingLabel?.field === "tbc" && (
-                          <span className="absolute -top-1 -right-1 text-[8px] text-primary font-medium bg-primary/10 px-1 rounded z-10">✏️</span>
+                          <span className="absolute -top-1 -right-1 text-[8px] text-muted-foreground font-medium bg-muted px-1 rounded z-10">
+                            <Eye className="w-2.5 h-2.5 inline" />
+                          </span>
                         )}
                         <AnnotationPopover
                           label={h.tbc}
@@ -490,7 +518,7 @@ const HazardTable = () => {
                           disabled={editingLabel !== null && !(editingLabel.taskId === h.id && editingLabel.field === "tbc")}
                           editingBy={editingLabel?.taskId === h.id && editingLabel?.field === "tbc" ? null : editingLabel ? "FAUZAN AJI" : null}
                           onOpenChange={(isOpen) => {
-                            if (isOpen) setEditingLabel({ taskId: h.id, field: "tbc" });
+                            if (isOpen) handleLabelOpen(h.id, "tbc");
                             else if (editingLabel?.taskId === h.id && editingLabel?.field === "tbc") setEditingLabel(null);
                           }}
                         />
@@ -499,7 +527,9 @@ const HazardTable = () => {
                     <td className={labelCellClass(11, "pspp")} onClick={(e) => e.stopPropagation()}>
                       <div className="relative">
                         {editingLabel?.taskId === h.id && editingLabel?.field === "pspp" && (
-                          <span className="absolute -top-1 -right-1 text-[8px] text-primary font-medium bg-primary/10 px-1 rounded z-10">✏️</span>
+                          <span className="absolute -top-1 -right-1 text-[8px] text-muted-foreground font-medium bg-muted px-1 rounded z-10">
+                            <Eye className="w-2.5 h-2.5 inline" />
+                          </span>
                         )}
                         <AnnotationPopover
                           label={h.pspp}
@@ -509,7 +539,7 @@ const HazardTable = () => {
                           disabled={editingLabel !== null && !(editingLabel.taskId === h.id && editingLabel.field === "pspp")}
                           editingBy={editingLabel?.taskId === h.id && editingLabel?.field === "pspp" ? null : editingLabel ? "FAUZAN AJI" : null}
                           onOpenChange={(isOpen) => {
-                            if (isOpen) setEditingLabel({ taskId: h.id, field: "pspp" });
+                            if (isOpen) handleLabelOpen(h.id, "pspp");
                             else if (editingLabel?.taskId === h.id && editingLabel?.field === "pspp") setEditingLabel(null);
                           }}
                         />
@@ -518,7 +548,9 @@ const HazardTable = () => {
                     <td className={labelCellClass(12, "gr")} onClick={(e) => e.stopPropagation()}>
                       <div className="relative">
                         {editingLabel?.taskId === h.id && editingLabel?.field === "gr" && (
-                          <span className="absolute -top-1 -right-1 text-[8px] text-primary font-medium bg-primary/10 px-1 rounded z-10">✏️</span>
+                          <span className="absolute -top-1 -right-1 text-[8px] text-muted-foreground font-medium bg-muted px-1 rounded z-10">
+                            <Eye className="w-2.5 h-2.5 inline" />
+                          </span>
                         )}
                         <AnnotationPopover
                           label={h.gr}
@@ -528,7 +560,7 @@ const HazardTable = () => {
                           disabled={editingLabel !== null && !(editingLabel.taskId === h.id && editingLabel.field === "gr")}
                           editingBy={editingLabel?.taskId === h.id && editingLabel?.field === "gr" ? null : editingLabel ? "FAUZAN AJI" : null}
                           onOpenChange={(isOpen) => {
-                            if (isOpen) setEditingLabel({ taskId: h.id, field: "gr" });
+                            if (isOpen) handleLabelOpen(h.id, "gr");
                             else if (editingLabel?.taskId === h.id && editingLabel?.field === "gr") setEditingLabel(null);
                           }}
                         />
