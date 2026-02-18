@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, ZoomIn, Lock, Sparkles } from "lucide-react";
+import { X, ZoomIn, Lock, User } from "lucide-react";
 import { HazardTask, AILabel } from "@/types/hazard";
 import StatusBadge from "./StatusBadge";
 import { Progress } from "@/components/ui/progress";
@@ -131,9 +131,10 @@ const AnnotationRow = ({ title, label }: { title: string; label: AILabel }) => {
   if (isAutoConfirmed) {
     return (
       <div className="p-2 rounded border border-border bg-muted/20">
-        <div className="flex items-center gap-1 text-[11px] font-medium text-foreground">
-          <Sparkles className="w-3 h-3 text-muted-foreground" />
-          {title}: {displayLabel}
+        <div className="flex items-center gap-1.5 text-[11px] font-medium text-foreground">
+          <span className="text-[9px] font-bold text-muted-foreground bg-muted px-1 rounded">AI</span>
+          <span className="flex-1">{title}: {displayLabel}</span>
+          <Lock className="w-3 h-3 text-primary shrink-0" />
         </div>
         <p className="text-[10px] text-muted-foreground mt-0.5">
           Confirmed by: System (AI Auto-Confirm) · Relevance: {relevance}%
@@ -148,14 +149,15 @@ const AnnotationRow = ({ title, label }: { title: string; label: AILabel }) => {
   }
 
   return (
-    <div className="p-2 rounded border border-primary/15 bg-primary/[0.03]">
-      <div className="flex items-center gap-1 text-[11px] font-medium text-primary">
-        <Lock className="w-3 h-3" />
-        {title}: {displayLabel}
+    <div className="p-2 rounded border border-border bg-muted/20">
+      <div className="flex items-center gap-1.5 text-[11px] font-medium text-foreground">
+        <User className="w-3 h-3 text-muted-foreground shrink-0" />
+        <span className="flex-1">{title}: {displayLabel}</span>
+        <Lock className="w-3 h-3 text-primary shrink-0" />
       </div>
       {label.annotated_by && (
         <p className="text-[10px] text-muted-foreground mt-0.5">
-          Confirmed by {label.annotated_by} · {label.annotated_at ? new Date(label.annotated_at).toLocaleString() : ""}
+          Annotated by {label.annotated_by} · {label.annotated_at ? new Date(label.annotated_at).toLocaleString() : ""}
         </p>
       )}
       {label.annotation_note && (

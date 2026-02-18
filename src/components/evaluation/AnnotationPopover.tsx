@@ -8,7 +8,7 @@ import { AILabel, TBC_OPTIONS } from "@/types/hazard";
 import AIBadge from "./AIBadge";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { Lock, Timer, Sparkles, Check, User } from "lucide-react";
+import { Lock, Timer, Check, User, Eye } from "lucide-react";
 
 interface AnnotationPopoverProps {
   label: AILabel;
@@ -228,17 +228,13 @@ const AnnotationPopover = ({ label, fieldName = "TBC", options, onApply, slaDead
             )}
             {isLocked && (
               <div className="px-3 py-2 bg-muted/50 border-b border-border flex items-center gap-2 text-[11px] text-muted-foreground rounded-t-lg">
+                <Eye className="w-3 h-3 shrink-0 text-muted-foreground" />
                 {label.auto_confirmed ? (
-                  <>
-                    <Sparkles className="w-3 h-3 shrink-0" />
-                    <span>Auto-confirmed · {label.annotated_at ? new Date(label.annotated_at).toLocaleString() : "N/A"}</span>
-                  </>
+                  <span>Auto-confirmed · {label.annotated_at ? new Date(label.annotated_at).toLocaleString() : "N/A"}</span>
                 ) : (
-                  <>
-                    <Lock className="w-3 h-3 shrink-0" />
-                    <span>Confirmed by <strong>{label.annotated_by}</strong> · {label.annotated_at ? new Date(label.annotated_at).toLocaleString() : "N/A"}</span>
-                  </>
+                  <span>Confirmed by <strong>{label.annotated_by}</strong> · {label.annotated_at ? new Date(label.annotated_at).toLocaleString() : "N/A"}</span>
                 )}
+                <Lock className="w-3 h-3 shrink-0 text-primary ml-auto" />
               </div>
             )}
 
@@ -465,7 +461,7 @@ const AnnotationPopover = ({ label, fieldName = "TBC", options, onApply, slaDead
                         <div className="flex items-center justify-between">
                           <span className="text-muted-foreground">Final Label</span>
                           <span className="font-medium text-foreground flex items-center gap-1">
-                            <Sparkles className="w-3 h-3 text-muted-foreground" />
+                            <span className="text-[9px] font-bold text-muted-foreground bg-muted px-1 rounded">AI</span>
                             {label.human_label || label.ai_label}
                           </span>
                         </div>

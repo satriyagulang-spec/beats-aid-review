@@ -1,6 +1,6 @@
 import { EvaluationStatus } from "@/types/hazard";
 import { cn } from "@/lib/utils";
-import { Lock, Sparkles } from "lucide-react";
+import { Lock } from "lucide-react";
 
 interface StatusBadgeProps {
   status: EvaluationStatus;
@@ -17,7 +17,7 @@ const config: Record<EvaluationStatus, { label: string; className: string; icon?
   auto_confirmed: {
     label: "Auto-confirmed by AI",
     className: "bg-muted text-muted-foreground border border-border",
-    icon: <Sparkles className="w-2.5 h-2.5" />,
+    icon: <span className="text-[8px] font-bold bg-muted-foreground/10 px-0.5 rounded">AI</span>,
   },
   completed: { label: "Completed", className: "bg-status-complete/15 text-status-complete border border-status-complete/30" },
 };

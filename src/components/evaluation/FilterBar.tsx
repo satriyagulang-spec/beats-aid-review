@@ -1,24 +1,24 @@
 import { useState, useRef, useEffect } from "react";
-import { Search, X, ChevronDown, MapPin, Navigation, Compass, Tag, BarChart3, Clock, Layers, FolderTree } from "lucide-react";
+import { Search, X, ChevronDown, MapPin, Navigation, Compass, Tag, Layers, FolderTree, Building2, MapPinned } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 export interface ColumnFilters {
   site: string[];
   lokasi: string[];
+  detail_location: string[];
   ketidaksesuaian: string[];
   sub_ketidaksesuaian: string[];
+  pic_perusahaan: string[];
   tbc: string[];
   pspp: string[];
   gr: string[];
-  confidence: string | null;
-  timeRemaining: string | null;
 }
 
 export const emptyFilters: ColumnFilters = {
-  site: [], lokasi: [], ketidaksesuaian: [], sub_ketidaksesuaian: [],
+  site: [], lokasi: [], detail_location: [], ketidaksesuaian: [], sub_ketidaksesuaian: [],
+  pic_perusahaan: [],
   tbc: [], pspp: [], gr: [],
-  confidence: null, timeRemaining: null,
 };
 
 interface FilterBarProps {
@@ -29,8 +29,10 @@ interface FilterBarProps {
   filterOptions: {
     sites: string[];
     lokasi: string[];
+    detail_location: string[];
     ketidaksesuaian: string[];
     sub_ketidaksesuaian: string[];
+    pic_perusahaan: string[];
     tbcLabels: string[];
     psppLabels: string[];
     grLabels: string[];
@@ -38,22 +40,22 @@ interface FilterBarProps {
 }
 
 const FILTER_ICONS: Record<string, React.ReactNode> = {
+  "PIC Perusahaan": <Building2 className="w-3 h-3" />,
   Site: <MapPin className="w-3 h-3" />,
   Lokasi: <Navigation className="w-3 h-3" />,
+  "Detail Lokasi": <MapPinned className="w-3 h-3" />,
   Ketidaksesuaian: <Compass className="w-3 h-3" />,
   "Sub Ketidaksesuaian": <FolderTree className="w-3 h-3" />,
   TBC: <Tag className="w-3 h-3" />,
   PSPP: <Layers className="w-3 h-3" />,
   GR: <Tag className="w-3 h-3" />,
-  Confidence: <BarChart3 className="w-3 h-3" />,
-  "Time Left": <Clock className="w-3 h-3" />,
 };
 
 const FilterBar = ({ search, onSearchChange, filters, onFiltersChange, filterOptions }: FilterBarProps) => {
   const activeCount = [
-    ...filters.site, ...filters.lokasi, ...filters.ketidaksesuaian, ...filters.sub_ketidaksesuaian,
-    ...filters.tbc, ...filters.pspp, ...filters.gr,
-  ].length + (filters.confidence ? 1 : 0) + (filters.timeRemaining ? 1 : 0);
+    ...filters.site, ...filters.lokasi, ...filters.detail_location, ...filters.ketidaksesuaian, ...filters.sub_ketidaksesuaian,
+    ...filters.pic_perusahaan, ...filters.tbc, ...filters.pspp, ...filters.gr,
+  ].length;
 
   const clearAll = () => onFiltersChange(emptyFilters);
 
@@ -69,10 +71,14 @@ const FilterBar = ({ search, onSearchChange, filters, onFiltersChange, filterOpt
         />
       </div>
       <div className="flex items-center gap-1.5 flex-wrap flex-1">
+        <MultiSelectFilter label="PIC Perusahaan" icon={FILTER_ICONS["PIC Perusahaan"]} options={filterOptions.pic_perusahaan} selected={filters.pic_perusahaan}
+          onChange={(v) => onFiltersChange({ ...filters, pic_perusahaan: v })} />
         <MultiSelectFilter label="Site" icon={FILTER_ICONS.Site} options={filterOptions.sites} selected={filters.site}
           onChange={(v) => onFiltersChange({ ...filters, site: v })} />
         <MultiSelectFilter label="Lokasi" icon={FILTER_ICONS.Lokasi} options={filterOptions.lokasi} selected={filters.lokasi}
           onChange={(v) => onFiltersChange({ ...filters, lokasi: v })} />
+        <MultiSelectFilter label="Detail Lokasi" icon={FILTER_ICONS["Detail Lokasi"]} options={filterOptions.detail_location} selected={filters.detail_location}
+          onChange={(v) => onFiltersChange({ ...filters, detail_location: v })} />
         <MultiSelectFilter label="Ketidaksesuaian" icon={FILTER_ICONS.Ketidaksesuaian} options={filterOptions.ketidaksesuaian} selected={filters.ketidaksesuaian}
           onChange={(v) => onFiltersChange({ ...filters, ketidaksesuaian: v })} />
         <MultiSelectFilter label="Sub Ketidaksesuaian" icon={FILTER_ICONS["Sub Ketidaksesuaian"]} options={filterOptions.sub_ketidaksesuaian} selected={filters.sub_ketidaksesuaian}
@@ -83,16 +89,6 @@ const FilterBar = ({ search, onSearchChange, filters, onFiltersChange, filterOpt
           onChange={(v) => onFiltersChange({ ...filters, pspp: v })} />
         <MultiSelectFilter label="GR" icon={FILTER_ICONS.GR} options={filterOptions.grLabels} selected={filters.gr}
           onChange={(v) => onFiltersChange({ ...filters, gr: v })} />
-        <SingleSelectFilter label="Confidence" icon={FILTER_ICONS.Confidence} options={[
-          { value: "0-50", label: "0–50%" },
-          { value: "50-70", label: "50–70%" },
-          { value: "70-100", label: "70–100%" },
-        ]} selected={filters.confidence} onChange={(v) => onFiltersChange({ ...filters, confidence: v })} />
-        <SingleSelectFilter label="Time Left" icon={FILTER_ICONS["Time Left"]} options={[
-          { value: "<6h", label: "< 6 hours" },
-          { value: "<24h", label: "< 24 hours" },
-          { value: ">24h", label: "> 24 hours" },
-        ]} selected={filters.timeRemaining} onChange={(v) => onFiltersChange({ ...filters, timeRemaining: v })} />
         {activeCount > 0 && (
           <button onClick={clearAll} className="inline-flex items-center gap-1 px-2 py-1.5 text-[11px] text-destructive hover:text-destructive/80 transition-colors">
             <X className="w-3 h-3" /> Clear ({activeCount})
@@ -145,52 +141,6 @@ function MultiSelectFilter({ label, icon, options, selected, onChange }: {
               <input type="checkbox" checked={selected.includes(opt)} onChange={() => toggle(opt)} className="accent-primary w-3 h-3" />
               <span className="truncate">{opt}</span>
             </label>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Single-select dropdown filter
-function SingleSelectFilter({ label, icon, options, selected, onChange }: {
-  label: string; icon?: React.ReactNode; options: { value: string; label: string }[]; selected: string | null; onChange: (v: string | null) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
-  return (
-    <div ref={ref} className="relative">
-      <button
-        onClick={() => setOpen(!open)}
-        className={cn(
-          "inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded border text-[11px] font-medium transition-colors",
-          selected ? "border-primary/30 bg-primary/5 text-primary" : "border-border text-foreground hover:bg-muted"
-        )}
-      >
-        {icon}
-        {label}{selected && `: ${options.find(o => o.value === selected)?.label}`}
-        <ChevronDown className="w-3 h-3 text-muted-foreground" />
-      </button>
-      {open && (
-        <div className="absolute top-full left-0 mt-1 z-50 bg-popover border border-border rounded-md shadow-md w-40 py-1">
-          <button onClick={() => { onChange(null); setOpen(false); }}
-            className={cn("w-full text-left px-3 py-1.5 text-[11px] hover:bg-muted/50", !selected && "font-medium text-primary")}>
-            All
-          </button>
-          {options.map((opt) => (
-            <button key={opt.value} onClick={() => { onChange(opt.value); setOpen(false); }}
-              className={cn("w-full text-left px-3 py-1.5 text-[11px] hover:bg-muted/50", selected === opt.value && "font-medium text-primary")}>
-              {opt.label}
-            </button>
           ))}
         </div>
       )}

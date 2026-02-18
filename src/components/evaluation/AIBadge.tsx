@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Clock, Lock, User } from "lucide-react";
+import { Clock, Lock, User, Eye } from "lucide-react";
 import { AILabel } from "@/types/hazard";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -46,9 +46,13 @@ const AIBadge = ({ label, onClick, slaDeadline, disabled, editingBy }: AIBadgePr
   const displayLabel = label.human_label || label.ai_label;
   const isHuman = !!label.human_label && label.locked && !label.auto_confirmed;
   const isAutoConfirmed = label.auto_confirmed;
+  const isLocked = isHuman || isAutoConfirmed;
   const topCandidate = label.candidates?.[0];
   const relevance = topCandidate?.relevance ?? 0;
   const candidates = label.candidates?.slice(0, 3) ?? [];
+
+  // Icon for locked states: Eye (view-only), enterprise muted style
+  const ActionIcon = isLocked ? Eye : null;
 
   if (!displayLabel) {
     return (
@@ -61,24 +65,7 @@ const AIBadge = ({ label, onClick, slaDeadline, disabled, editingBy }: AIBadgePr
     );
   }
 
-  const candidatesTooltip = (
-    <div className="space-y-1.5">
-      <p className="font-semibold text-[11px] mb-1">Top AI Candidates</p>
-      {candidates.map((c, i) => (
-        <div key={i} className="flex items-center justify-between gap-3">
-          <span className="text-[11px]">
-            <span className="text-muted-foreground mr-1">#{i + 1}</span>
-            {c.label}
-          </span>
-          <span className="text-[10px] font-semibold shrink-0">{c.relevance}%</span>
-        </div>
-      ))}
-      {slaDeadline && <p className="text-muted-foreground text-[10px] pt-1 border-t border-border">⏱ {timeText}</p>}
-      {editingBy && <p className="text-destructive text-[10px] pt-1 border-t border-border">🔒 Being edited by {editingBy}</p>}
-    </div>
-  );
-
-  // Auto-confirmed badge — AI tag + label + lock icon on right
+  // Auto-confirmed badge — [AI] tag + label + lock icon (blue)
   if (isAutoConfirmed) {
     return (
       <TooltipProvider delayDuration={200}>
@@ -88,7 +75,7 @@ const AIBadge = ({ label, onClick, slaDeadline, disabled, editingBy }: AIBadgePr
               <div className="flex items-center gap-1.5 w-full">
                 <span className={cn(TAG_BASE, "text-muted-foreground bg-muted")}>AI</span>
                 <span className="truncate font-medium text-left flex-1">{displayLabel}</span>
-                <Lock className="w-3 h-3 text-muted-foreground shrink-0" />
+                <Lock className="w-3 h-3 text-primary shrink-0" />
               </div>
               <span className="text-[9px] text-muted-foreground pl-[26px]">Auto-confirmed · {relevance}%</span>
             </div>
@@ -109,19 +96,19 @@ const AIBadge = ({ label, onClick, slaDeadline, disabled, editingBy }: AIBadgePr
     );
   }
 
-  // Human-locked badge — label + user icon + lock icon on right
+  // Human-locked badge — [Human icon] + label + lock icon (blue) — matches AI layout
   if (isHuman) {
     return (
       <TooltipProvider delayDuration={200}>
         <Tooltip>
           <TooltipTrigger asChild>
-            <div onClick={disabled ? undefined : onClick} className={cn(BADGE_BASE, "border-primary/20 bg-primary/[0.04] text-foreground", disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer")}>
+            <div onClick={disabled ? undefined : onClick} className={cn(BADGE_BASE, "border-border bg-muted/40 text-foreground", disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer")}>
               <div className="flex items-center gap-1.5 w-full">
-                <span className="truncate font-medium text-left flex-1">{displayLabel}</span>
                 <User className="w-3 h-3 text-muted-foreground shrink-0" />
+                <span className="truncate font-medium text-left flex-1">{displayLabel}</span>
                 <Lock className="w-3 h-3 text-primary shrink-0" />
               </div>
-              <span className="text-[9px] text-muted-foreground">Manual Review</span>
+              <span className="text-[9px] text-muted-foreground pl-[18px]">Annotated by Human</span>
             </div>
           </TooltipTrigger>
           <TooltipContent side="top" className="max-w-[260px] text-xs p-2.5">
@@ -133,7 +120,6 @@ const AIBadge = ({ label, onClick, slaDeadline, disabled, editingBy }: AIBadgePr
               {label.annotated_at && (
                 <p className="text-muted-foreground text-[10px]">{new Date(label.annotated_at).toLocaleString()}</p>
               )}
-              <p className="text-muted-foreground text-[10px]">Relevance score: {relevance}%</p>
             </div>
           </TooltipContent>
         </Tooltip>
@@ -143,6 +129,23 @@ const AIBadge = ({ label, onClick, slaDeadline, disabled, editingBy }: AIBadgePr
 
   // Pending AI badge
   const timerColor = hoursLeft < 1 ? "text-destructive" : hoursLeft < 6 ? "text-warning" : "text-muted-foreground";
+
+  const candidatesTooltip = (
+    <div className="space-y-1.5">
+      <p className="font-semibold text-[11px] mb-1">Top AI Candidates</p>
+      {candidates.map((c, i) => (
+        <div key={i} className="flex items-center justify-between gap-3">
+          <span className="text-[11px]">
+            <span className="text-muted-foreground mr-1">#{i + 1}</span>
+            {c.label}
+          </span>
+          <span className="text-[10px] font-semibold shrink-0">{c.relevance}%</span>
+        </div>
+      ))}
+      {slaDeadline && <p className="text-muted-foreground text-[10px] pt-1 border-t border-border">⏱ {timeText}</p>}
+      {editingBy && <p className="text-muted-foreground text-[10px] pt-1 border-t border-border">🔒 Being edited by {editingBy}</p>}
+    </div>
+  );
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -166,7 +169,7 @@ const AIBadge = ({ label, onClick, slaDeadline, disabled, editingBy }: AIBadgePr
               )}
             </div>
             {editingBy && (
-              <span className="text-[8px] text-destructive pl-[26px]">🔒 {editingBy} editing</span>
+              <span className="text-[8px] text-muted-foreground pl-[26px]">🔒 {editingBy} editing</span>
             )}
           </button>
         </TooltipTrigger>
