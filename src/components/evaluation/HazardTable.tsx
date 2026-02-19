@@ -5,6 +5,7 @@ import { mockHazards } from "@/data/mockHazards";
 import AnnotationPopover from "./AnnotationPopover";
 import FilterBar, { ColumnFilters, emptyFilters } from "./FilterBar";
 import TaskDrawer from "./TaskDrawer";
+import LabelColumnHeader, { LabelFilterValue, LabelSortValue } from "./LabelColumnHeader";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -98,6 +99,14 @@ const HazardTable = () => {
   const [hoverColIdx, setHoverColIdx] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
+  // Per-column label filter & sort
+  const [labelFilters, setLabelFilters] = useState<Record<"tbc" | "pspp" | "gr", LabelFilterValue>>({
+    tbc: "all", pspp: "all", gr: "all",
+  });
+  const [labelSorts, setLabelSorts] = useState<Record<"tbc" | "pspp" | "gr", LabelSortValue | null>>({
+    tbc: null, pspp: null, gr: null,
+  });
+
   // Auto-confirm timer — fix metadata for AI auto-confirm
   useEffect(() => {
     const interval = setInterval(() => {
@@ -147,6 +156,13 @@ const HazardTable = () => {
     };
   }, [hazards]);
 
+  // Helper to check label status for column filtering
+  const getLabelStatus = (label: AILabel): "auto_confirmed" | "human_annotated" | "waiting" => {
+    if (label.auto_confirmed) return "auto_confirmed";
+    if (label.locked && !label.auto_confirmed) return "human_annotated";
+    return "waiting";
+  };
+
   const filtered = useMemo(() => {
     let result = hazards.filter((h) => {
       if (search) {
@@ -161,10 +177,49 @@ const HazardTable = () => {
       if (filters.tbc.length && !filters.tbc.includes(getLabelText(h.tbc))) return false;
       if (filters.pspp.length && !filters.pspp.includes(getLabelText(h.pspp))) return false;
       if (filters.gr.length && !filters.gr.includes(getLabelText(h.gr))) return false;
+      // Per-column label status filters
+      if (labelFilters.tbc !== "all" && getLabelStatus(h.tbc) !== labelFilters.tbc) return false;
+      if (labelFilters.pspp !== "all" && getLabelStatus(h.pspp) !== labelFilters.pspp) return false;
+      if (labelFilters.gr !== "all" && getLabelStatus(h.gr) !== labelFilters.gr) return false;
       return true;
     });
 
-    if (sort.key && sort.dir) {
+    // Determine active sort: per-column label sort takes priority if set
+    const activeLabelSort = (["tbc", "pspp", "gr"] as const).find(f => labelSorts[f] !== null);
+
+    if (activeLabelSort) {
+      const field = activeLabelSort;
+      const sortVal = labelSorts[field]!;
+      result = [...result].sort((a, b) => {
+        let cmp = 0;
+        const aLabel = a[field];
+        const bLabel = b[field];
+        switch (sortVal) {
+          case "relevance_desc":
+            cmp = (bLabel.candidates[0]?.relevance ?? 0) - (aLabel.candidates[0]?.relevance ?? 0);
+            break;
+          case "relevance_asc":
+            cmp = (aLabel.candidates[0]?.relevance ?? 0) - (bLabel.candidates[0]?.relevance ?? 0);
+            break;
+          case "sla_asc":
+            cmp = (new Date(a.sla_deadline).getTime() - Date.now()) - (new Date(b.sla_deadline).getTime() - Date.now());
+            break;
+          case "sla_desc":
+            cmp = (new Date(b.sla_deadline).getTime() - Date.now()) - (new Date(a.sla_deadline).getTime() - Date.now());
+            break;
+          case "newest":
+            cmp = b.timestamp.localeCompare(a.timestamp);
+            break;
+          case "oldest":
+            cmp = a.timestamp.localeCompare(b.timestamp);
+            break;
+        }
+        // Tie-breakers
+        if (cmp === 0) cmp = b.timestamp.localeCompare(a.timestamp);
+        if (cmp === 0) cmp = a.id.localeCompare(b.id);
+        return cmp;
+      });
+    } else if (sort.key && sort.dir) {
       result = [...result].sort((a, b) => {
         let cmp = 0;
         switch (sort.key) {
@@ -181,7 +236,7 @@ const HazardTable = () => {
     }
 
     return result;
-  }, [hazards, search, filters, sort]);
+  }, [hazards, search, filters, sort, labelFilters, labelSorts]);
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -191,7 +246,7 @@ const HazardTable = () => {
   }, [filtered, currentPage]);
 
   // Reset page when filters change
-  useEffect(() => { setCurrentPage(1); }, [search, filters, sort]);
+  useEffect(() => { setCurrentPage(1); }, [search, filters, sort, labelFilters, labelSorts]);
 
   const handleSort = useCallback((key: SortKey) => {
     if (!key) return;
@@ -369,26 +424,45 @@ const HazardTable = () => {
             <thead>
               <tr className="bg-muted/70">
                 <th className="text-center px-2 py-2.5 font-medium text-muted-foreground border-b-[1.5px] border-r border-border w-[40px]">#</th>
-                {COLUMNS.map((col, i) => (
+                {COLUMNS.map((col, i) => {
+                    const labelField = col.key === "tbc_rel" ? "tbc" as const : col.key === "pspp_rel" ? "pspp" as const : col.key === "gr_rel" ? "gr" as const : null;
+                    return (
                     <th
                       key={col.label}
                       className={cn(
                         "text-left px-3 py-2 font-semibold text-muted-foreground whitespace-nowrap border-b-[1.5px] border-r border-border last:border-r-0 group transition-colors",
-                        col.sortable && "cursor-pointer select-none hover:bg-muted/90",
+                        col.sortable && !labelField && "cursor-pointer select-none hover:bg-muted/90",
                         activeColIdx === i && "bg-primary/[0.06]",
                         hoverColIdx === i && "bg-muted/90",
-                        sort.key === col.key && sort.dir && "bg-primary/[0.04]"
+                        sort.key === col.key && sort.dir && "bg-primary/[0.04]",
+                        labelField && labelFilters[labelField] !== "all" && "bg-primary/[0.04]"
                       )}
-                      onClick={() => col.sortable && handleSort(col.key)}
+                      onClick={() => col.sortable && !labelField && handleSort(col.key)}
                       onMouseEnter={() => setHoverColIdx(i)}
                       onMouseLeave={() => setHoverColIdx(null)}
                     >
-                      <div className="flex items-center gap-1">
-                        <span>{col.label}</span>
-                        {col.sortable && renderSortIcon(col.key)}
-                      </div>
+                      {labelField ? (
+                        <LabelColumnHeader
+                          label={col.label}
+                          filter={labelFilters[labelField]}
+                          sort={labelSorts[labelField]}
+                          onFilterChange={(v) => setLabelFilters(prev => ({ ...prev, [labelField]: v }))}
+                          onSortChange={(v) => {
+                            // Clear other label sorts when setting one
+                            setLabelSorts({ tbc: null, pspp: null, gr: null, [labelField]: v });
+                            // Clear global sort when label sort is active
+                            if (v) setSort({ key: null, dir: null });
+                          }}
+                        />
+                      ) : (
+                        <div className="flex items-center gap-1">
+                          <span>{col.label}</span>
+                          {col.sortable && renderSortIcon(col.key)}
+                        </div>
+                      )}
                     </th>
-                ))}
+                    );
+                })}
               </tr>
             </thead>
             <tbody>
@@ -578,6 +652,21 @@ const HazardTable = () => {
                   </tr>
                 );
               })}
+              {paginatedData.length === 0 && (
+                <tr>
+                  <td colSpan={COLUMNS.length + 1} className="text-center py-8 text-muted-foreground text-xs">
+                    <p>No items found for this filter.</p>
+                    {(labelFilters.tbc !== "all" || labelFilters.pspp !== "all" || labelFilters.gr !== "all") && (
+                      <button
+                        onClick={() => setLabelFilters({ tbc: "all", pspp: "all", gr: "all" })}
+                        className="mt-2 text-primary hover:underline text-[11px] font-medium"
+                      >
+                        Clear all label filters
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
