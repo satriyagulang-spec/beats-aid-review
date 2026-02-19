@@ -347,33 +347,15 @@ const HazardTable = () => {
         filterOptions={filterOptions}
       />
 
-      {/* Formula Bar - Active Row Info */}
+      {/* Formula Bar - Description Only */}
       {activeRow && (
-        <div className="bg-card border border-border rounded-t-lg px-3 py-2 flex items-start gap-3 text-xs">
+        <div className="bg-card border border-border rounded-t-lg px-3 py-2 flex items-center gap-3 text-xs">
           <span className="font-mono font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded text-[11px] shrink-0">
             {activeRow.id}
           </span>
-          <div className="flex-1 min-w-0 space-y-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-muted-foreground shrink-0">{activeRow.pic_perusahaan}</span>
-              <span className="text-border">·</span>
-              <span className="text-muted-foreground">{activeRow.site}</span>
-              <span className="text-border">·</span>
-              <span className="text-muted-foreground">{activeRow.lokasi}</span>
-              <span className="text-border">·</span>
-              <span className="text-muted-foreground">{activeRow.detail_location}</span>
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-muted-foreground font-medium shrink-0">Ketidaksesuaian:</span>
-              <span className="text-foreground">{activeRow.ketidaksesuaian}</span>
-              <span className="text-border">·</span>
-              <span className="text-foreground">{activeRow.sub_ketidaksesuaian}</span>
-            </div>
-            <div>
-              <span className="text-muted-foreground font-medium shrink-0">Desc: </span>
-              <span className="text-foreground">{activeRow.description}</span>
-            </div>
-          </div>
+          <span className="text-muted-foreground shrink-0 font-medium">Description</span>
+          <div className="h-4 w-px bg-border shrink-0" />
+          <span className="text-foreground flex-1 min-w-0 truncate">{activeRow.description}</span>
         </div>
       )}
 
