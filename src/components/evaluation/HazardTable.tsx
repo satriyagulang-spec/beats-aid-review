@@ -207,12 +207,6 @@ const HazardTable = () => {
           case "sla_desc":
             cmp = (new Date(b.sla_deadline).getTime() - Date.now()) - (new Date(a.sla_deadline).getTime() - Date.now());
             break;
-          case "newest":
-            cmp = b.timestamp.localeCompare(a.timestamp);
-            break;
-          case "oldest":
-            cmp = a.timestamp.localeCompare(b.timestamp);
-            break;
         }
         // Tie-breakers
         if (cmp === 0) cmp = b.timestamp.localeCompare(a.timestamp);
