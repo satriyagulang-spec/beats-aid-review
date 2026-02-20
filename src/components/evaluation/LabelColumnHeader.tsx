@@ -20,18 +20,18 @@ const FILTER_OPTIONS: { value: LabelFilterValue; label: string }[] = [
   { value: "waiting", label: "Waiting" },
 ];
 
-const SORT_OPTIONS: { value: LabelSortValue; label: string; icon: "desc" | "asc" }[] = [
-  { value: "relevance_desc", label: "Highest Relevance", icon: "desc" },
-  { value: "relevance_asc", label: "Lowest Relevance", icon: "asc" },
-  { value: "sla_asc", label: "Most Urgent SLA", icon: "asc" },
-  { value: "sla_desc", label: "Least Urgent SLA", icon: "desc" },
+const SORT_OPTIONS: { value: LabelSortValue; label: string }[] = [
+  { value: "relevance_desc", label: "Highest Relevance" },
+  { value: "relevance_asc", label: "Lowest Relevance" },
+  { value: "sla_asc", label: "Most Urgent SLA" },
+  { value: "sla_desc", label: "Least Urgent SLA" },
 ];
 
 const FILTER_SHORT: Record<LabelFilterValue, string> = {
   all: "All",
   auto_confirmed: "AI",
   human_annotated: "Human",
-  waiting: "Waiting",
+  waiting: "Wait",
 };
 
 export default function LabelColumnHeader({ label, filter, sort, onFilterChange, onSortChange }: LabelColumnHeaderProps) {
@@ -53,8 +53,8 @@ export default function LabelColumnHeader({ label, filter, sort, onFilterChange,
   const isSorted = sort !== null;
 
   return (
-    <div className="flex items-center justify-between w-full gap-2">
-      <span className="font-semibold">{label}</span>
+    <div className="flex items-center justify-between w-full gap-1.5">
+      <span className="font-semibold text-[11px]">{label}</span>
 
       <div className="flex items-center gap-0.5 shrink-0">
         {/* Filter button */}
@@ -62,24 +62,23 @@ export default function LabelColumnHeader({ label, filter, sort, onFilterChange,
           <button
             onClick={(e) => { e.stopPropagation(); setShowFilter(v => !v); setShowSort(false); }}
             className={cn(
-              "inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors border",
+              "inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[9px] font-medium transition-colors border",
               isFiltered
                 ? "bg-primary/10 text-primary border-primary/20"
                 : "border-border text-muted-foreground hover:bg-muted hover:text-foreground"
             )}
           >
+            <ListFilter className="w-2.5 h-2.5" />
             {FILTER_SHORT[filter]}
-            {showFilter ? <ChevronUp className="w-2.5 h-2.5" /> : <ChevronDown className="w-2.5 h-2.5" />}
           </button>
           {showFilter && (
-            <div className="absolute top-full right-0 mt-1 z-[60] bg-popover border border-border rounded-lg shadow-xl py-1 min-w-[180px]">
-              <div className="px-3 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Show</div>
+            <div className="absolute top-full right-0 mt-1 z-[60] bg-popover border border-border rounded-md shadow-lg py-0.5 w-[150px]">
               {FILTER_OPTIONS.map(opt => (
                 <button
                   key={opt.value}
                   onClick={(e) => { e.stopPropagation(); onFilterChange(opt.value); setShowFilter(false); }}
                   className={cn(
-                    "w-full text-left px-3 py-2 text-[11px] transition-colors",
+                    "w-full text-left px-2.5 py-1.5 text-[10px] transition-colors",
                     filter === opt.value
                       ? "bg-primary text-primary-foreground font-medium"
                       : "text-foreground hover:bg-muted"
@@ -103,25 +102,36 @@ export default function LabelColumnHeader({ label, filter, sort, onFilterChange,
                 : "text-muted-foreground hover:text-foreground hover:bg-muted"
             )}
           >
-            <ArrowDownUp className="w-3.5 h-3.5" />
+            <ArrowDownUp className="w-3 h-3" />
           </button>
           {showSort && (
-            <div className="absolute top-full right-0 mt-1 z-[60] bg-popover border border-border rounded-lg shadow-xl py-1 min-w-[190px]">
+            <div className="absolute top-full right-0 mt-1 z-[60] bg-popover border border-border rounded-md shadow-lg py-0.5 w-[155px]">
               {SORT_OPTIONS.map(opt => (
                 <button
                   key={opt.value}
                   onClick={(e) => { e.stopPropagation(); onSortChange(sort === opt.value ? null : opt.value); setShowSort(false); }}
                   className={cn(
-                    "w-full text-left px-3 py-2 text-[11px] flex items-center gap-2 transition-colors",
+                    "w-full text-left px-2.5 py-1.5 text-[10px] flex items-center gap-1.5 transition-colors",
                     sort === opt.value
                       ? "bg-primary text-primary-foreground font-medium"
                       : "text-foreground hover:bg-muted"
                   )}
                 >
-                  <ArrowDownUp className="w-3 h-3 shrink-0 opacity-60" />
+                  {sort === opt.value && <span className="text-[8px]">✓</span>}
                   {opt.label}
                 </button>
               ))}
+              {isSorted && (
+                <>
+                  <div className="h-px bg-border my-0.5" />
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onSortChange(null); setShowSort(false); }}
+                    className="w-full text-left px-2.5 py-1.5 text-[10px] text-destructive hover:bg-destructive/10 transition-colors"
+                  >
+                    Clear sort
+                  </button>
+                </>
+              )}
             </div>
           )}
         </div>

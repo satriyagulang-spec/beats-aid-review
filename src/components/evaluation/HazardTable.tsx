@@ -81,7 +81,7 @@ const COLUMNS = [
   { key: "tbc_rel" as SortKey, label: "TBC", sortable: true },
   { key: "pspp_rel" as SortKey, label: "PSPP", sortable: true },
   { key: "gr_rel" as SortKey, label: "GR", sortable: true },
-  { key: "time_left" as SortKey, label: "AI Analysis", sortable: false },
+  { key: "time_left" as SortKey, label: "Detail", sortable: false },
 ];
 
 const PAGE_SIZE = 10;
@@ -374,15 +374,32 @@ const HazardTable = () => {
     return <ChevronsUpDown className="w-3 h-3 opacity-0 group-hover:opacity-40 transition-opacity" />;
   };
 
+  // Map column index to field name for formula bar
+  const COLUMN_FIELD_MAP: Record<number, { label: string; key: keyof HazardTask }> = {
+    0: { label: "Task ID", key: "id" },
+    1: { label: "Timestamp", key: "timestamp" },
+    2: { label: "PIC Perusahaan", key: "pic_perusahaan" },
+    3: { label: "Site", key: "site" },
+    4: { label: "Lokasi", key: "lokasi" },
+    5: { label: "Detail Location", key: "detail_location" },
+    6: { label: "Ketidaksesuaian", key: "ketidaksesuaian" },
+    7: { label: "Sub Ketidaksesuaian", key: "sub_ketidaksesuaian" },
+    8: { label: "Description", key: "description" },
+  };
+
+  const formulaField = activeColIdx !== null && COLUMN_FIELD_MAP[activeColIdx]
+    ? COLUMN_FIELD_MAP[activeColIdx]
+    : { label: "Description", key: "description" as keyof HazardTask };
+
   return (
     <div className="p-4">
       {/* Tabs */}
-      <div className="flex items-center gap-1 mb-4">
-        <button className="px-4 py-2 rounded-lg text-xs font-medium bg-primary text-primary-foreground flex items-center gap-1.5">
-          <span>📋</span> Evaluation
+      <div className="flex items-center gap-0.5 mb-4">
+        <button className="px-4 py-1.5 rounded-md text-xs font-semibold bg-primary text-primary-foreground transition-colors">
+          Evaluation
         </button>
-        <button className="px-4 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:bg-muted transition-colors flex items-center gap-1.5">
-          <span>📑</span> Duplicate
+        <button className="px-4 py-1.5 rounded-md text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors border border-transparent hover:border-border">
+          Duplicate
         </button>
       </div>
 
@@ -396,15 +413,23 @@ const HazardTable = () => {
         filterOptions={filterOptions}
       />
 
-      {/* Formula Bar - Description Only */}
+      {/* Formula Bar - Dynamic field based on clicked cell */}
       {activeRow && (
         <div className="bg-card border border-border rounded-t-lg px-3 py-2 flex items-center gap-3 text-xs">
-          <span className="font-mono font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded text-[11px] shrink-0">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <span className="text-muted-foreground text-[10px] shrink-0">{activeRow.pic_perusahaan}</span>
+            <span className="text-muted-foreground text-[10px]">·</span>
+            <span className="text-muted-foreground text-[10px] shrink-0">{activeRow.site}</span>
+            <span className="text-muted-foreground text-[10px]">·</span>
+            <span className="text-muted-foreground text-[10px] shrink-0">{activeRow.lokasi}</span>
+            <div className="h-4 w-px bg-border shrink-0 mx-1" />
+            <span className="text-muted-foreground shrink-0 font-medium text-[10px]">{formulaField.label}</span>
+            <div className="h-4 w-px bg-border shrink-0" />
+            <span className="text-foreground flex-1 min-w-0 truncate">{String(activeRow[formulaField.key])}</span>
+          </div>
+          <span className="font-mono font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded text-[10px] shrink-0">
             {activeRow.id}
           </span>
-          <span className="text-muted-foreground shrink-0 font-medium">Description</span>
-          <div className="h-4 w-px bg-border shrink-0" />
-          <span className="text-foreground flex-1 min-w-0 truncate">{activeRow.description}</span>
         </div>
       )}
 
@@ -623,9 +648,10 @@ const HazardTable = () => {
                             <TooltipTrigger asChild>
                               <button
                                 onClick={() => openDrawer(h)}
-                                className="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                                className="px-2 py-1 rounded border border-border bg-card text-[10px] font-medium text-foreground hover:bg-muted transition-colors"
                               >
-                                <Eye className="w-3.5 h-3.5" />
+                                <Eye className="w-3 h-3 inline mr-1" />
+                                View
                               </button>
                             </TooltipTrigger>
                             <TooltipContent side="top" className="text-xs">Quick detail</TooltipContent>
@@ -634,8 +660,9 @@ const HazardTable = () => {
                         <TooltipProvider delayDuration={200}>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <button className="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground opacity-50 cursor-not-allowed">
-                                <GitBranch className="w-3.5 h-3.5" />
+                              <button className="px-2 py-1 rounded border border-primary/30 bg-primary/5 text-[10px] font-medium text-primary hover:bg-primary/10 transition-colors">
+                                <GitBranch className="w-3 h-3 inline mr-1" />
+                                Trace
                               </button>
                             </TooltipTrigger>
                             <TooltipContent side="top" className="text-xs">Evaluation trace</TooltipContent>
