@@ -68,17 +68,18 @@ export default function LabelColumnHeader({ label, filter, sort, onFilterChange,
                 : "border-border text-muted-foreground hover:bg-muted hover:text-foreground"
             )}
           >
-            <ListFilter className="w-2.5 h-2.5" />
             {FILTER_SHORT[filter]}
+            {showFilter ? <ChevronUp className="w-2.5 h-2.5" /> : <ChevronDown className="w-2.5 h-2.5" />}
           </button>
           {showFilter && (
-            <div className="absolute top-full right-0 mt-1 z-[60] bg-popover border border-border rounded-md shadow-lg py-0.5 w-[150px]">
+            <div className="absolute top-full right-0 mt-1 z-[60] bg-popover border border-border rounded-lg shadow-xl py-1 min-w-[160px]">
+              <div className="px-3 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Show</div>
               {FILTER_OPTIONS.map(opt => (
                 <button
                   key={opt.value}
                   onClick={(e) => { e.stopPropagation(); onFilterChange(opt.value); setShowFilter(false); }}
                   className={cn(
-                    "w-full text-left px-2.5 py-1.5 text-[10px] transition-colors",
+                    "w-full text-left px-3 py-2 text-[11px] transition-colors",
                     filter === opt.value
                       ? "bg-primary text-primary-foreground font-medium"
                       : "text-foreground hover:bg-muted"
