@@ -512,9 +512,9 @@ const HazardTable = () => {
                   const isOtherEditing = editingLabel && (editingLabel.taskId !== h.id || editingLabel.field !== field);
                   return cn(
                     cellClass(colIdx),
-                    "whitespace-nowrap",
-                    isThisEditing && "bg-primary/[0.08] ring-2 ring-inset ring-primary/30 shadow-sm",
-                    isOtherEditing && isBeingEdited && "opacity-60"
+                    "whitespace-nowrap transition-all duration-200",
+                    isThisEditing && "bg-primary/[0.12] ring-2 ring-inset ring-primary/40 shadow-[inset_0_-2px_0_hsl(var(--primary))] relative z-10",
+                    isOtherEditing && isBeingEdited && "opacity-40"
                   );
                 };
 
@@ -533,13 +533,13 @@ const HazardTable = () => {
                     data-active={isActive ? "true" : undefined}
                     onClick={() => toggleActiveRow(h.id)}
                     className={cn(
-                      "transition-colors cursor-pointer",
+                      "transition-all duration-200 cursor-pointer",
                       !isActive && isLowRelevance && !isDimmed && "bg-destructive/[0.03]",
                       !isActive && isUrgent && !isLowRelevance && !isDimmed && "bg-warning/[0.03]",
                       !isActive && !isDimmed && "hover:bg-muted/40",
-                      isActive && "bg-primary/[0.07]",
-                      isBeingEdited && "bg-primary/[0.10] ring-1 ring-inset ring-primary/20",
-                      isDimmed && "opacity-50 transition-opacity"
+                      isActive && "bg-primary/[0.06] shadow-[inset_3px_0_0_hsl(var(--primary))]",
+                      isBeingEdited && "bg-primary/[0.10] shadow-[inset_3px_0_0_hsl(var(--primary))] ring-1 ring-inset ring-primary/20",
+                      isDimmed && "opacity-30 blur-[0.3px] transition-all duration-300"
                     )}
                   >
                     {/* Row index */}
@@ -646,30 +646,18 @@ const HazardTable = () => {
                       </div>
                     </td>
                     <td className={cn(cellClass(13), "border-r-0 whitespace-nowrap")} onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center gap-1">
-                        <TooltipProvider delayDuration={200}>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button
-                                onClick={() => openDrawer(h)}
-                                className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                              >
-                                <Eye className="w-3.5 h-3.5" />
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="text-[10px]">Quick detail</TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                        <TooltipProvider delayDuration={200}>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button className="p-1 rounded text-primary/70 hover:text-primary hover:bg-primary/5 transition-colors">
-                                <GitBranch className="w-3.5 h-3.5" />
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="text-[10px]">Evaluation trace</TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => openDrawer(h)}
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-border bg-card text-[10px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted hover:border-muted-foreground/20 transition-all shadow-sm"
+                        >
+                          <Eye className="w-3 h-3" />
+                          View
+                        </button>
+                        <button className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-primary/20 bg-primary/5 text-[10px] font-medium text-primary hover:bg-primary/10 hover:border-primary/30 transition-all shadow-sm">
+                          <GitBranch className="w-3 h-3" />
+                          Trace
+                        </button>
                       </div>
                     </td>
                   </tr>
