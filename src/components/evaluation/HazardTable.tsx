@@ -392,18 +392,21 @@ const HazardTable = () => {
     : { label: "Description", key: "description" as keyof HazardTask };
 
   return (
-    <div className="p-4">
+    <div className="p-5">
       {/* Tabs */}
-      <div className="flex items-center gap-0.5 mb-4">
-        <button className="px-4 py-1.5 rounded-md text-xs font-semibold bg-primary text-primary-foreground transition-colors">
+      <div className="flex items-center gap-0 mb-5 border-b border-border">
+        <button className="px-4 py-2 text-[12px] font-semibold text-primary border-b-2 border-primary -mb-px transition-colors">
           Evaluation
         </button>
-        <button className="px-4 py-1.5 rounded-md text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors border border-transparent hover:border-border">
+        <button className="px-4 py-2 text-[12px] font-medium text-muted-foreground hover:text-foreground -mb-px border-b-2 border-transparent transition-colors">
           Duplicate
         </button>
       </div>
 
-      <h2 className="text-lg font-semibold text-foreground mb-3">Tabel Labeling</h2>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-sm font-semibold text-foreground tracking-tight">Tabel Labeling</h2>
+        <span className="text-[10px] text-muted-foreground">{filtered.length} tasks</span>
+      </div>
 
       <FilterBar
         search={search}
@@ -413,23 +416,22 @@ const HazardTable = () => {
         filterOptions={filterOptions}
       />
 
-      {/* Formula Bar - Dynamic field based on clicked cell */}
+      {/* Formula Bar */}
       {activeRow && (
-        <div className="bg-card border border-border rounded-t-lg px-3 py-2 flex items-center gap-3 text-xs">
-          <span className="font-mono font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded text-[10px] shrink-0">
+        <div className="bg-card border border-border rounded-t-md px-3 py-1.5 flex items-center gap-3 text-xs" style={{ boxShadow: 'var(--shadow-xs)' }}>
+          <span className="font-mono font-semibold text-primary bg-primary/8 px-2 py-0.5 rounded text-[10px] shrink-0 border border-primary/10">
             {activeRow.id}
           </span>
-          <div className="h-4 w-px bg-border shrink-0" />
+          <div className="h-3.5 w-px bg-border shrink-0" />
           <div className="flex items-center gap-2 flex-1 min-w-0">
-            <span className="text-muted-foreground shrink-0 font-medium text-[10px]">{formulaField.label}</span>
-            <div className="h-4 w-px bg-border shrink-0" />
-            <span className="text-foreground flex-1 min-w-0 truncate">{String(activeRow[formulaField.key])}</span>
+            <span className="text-muted-foreground shrink-0 font-medium text-[10px] uppercase tracking-wider">{formulaField.label}</span>
+            <span className="text-foreground flex-1 min-w-0 truncate text-[11px]">{String(activeRow[formulaField.key])}</span>
           </div>
           <div className="flex items-center gap-1.5 shrink-0 text-[10px] text-muted-foreground">
             <span>{activeRow.pic_perusahaan}</span>
-            <span>·</span>
+            <span className="text-border">·</span>
             <span>{activeRow.site}</span>
-            <span>·</span>
+            <span className="text-border">·</span>
             <span>{activeRow.lokasi}</span>
           </div>
         </div>
@@ -438,20 +440,20 @@ const HazardTable = () => {
       {/* Spreadsheet Table */}
       <div className={cn(
         "bg-card border border-border overflow-hidden",
-        activeRow ? "rounded-b-lg border-t-0" : "rounded-lg"
-      )}>
+        activeRow ? "rounded-b-md border-t-0" : "rounded-md"
+      )} style={{ boxShadow: 'var(--shadow-sm)' }}>
         <div className="overflow-x-auto scrollbar-thin">
-          <table className="w-full text-xs border-collapse" style={{ borderSpacing: 0 }}>
+          <table className="w-full text-[11px] border-collapse" style={{ borderSpacing: 0 }}>
             <thead>
-              <tr className="bg-muted/70">
-                <th className="text-center px-2 py-2.5 font-medium text-muted-foreground border-b-[1.5px] border-r border-border w-[40px]">#</th>
+              <tr className="bg-muted/50">
+                <th className="text-center px-2 py-2 font-medium text-muted-foreground border-b border-r border-border w-[36px] text-[10px]">#</th>
                 {COLUMNS.map((col, i) => {
                     const labelField = col.key === "tbc_rel" ? "tbc" as const : col.key === "pspp_rel" ? "pspp" as const : col.key === "gr_rel" ? "gr" as const : null;
                     return (
                     <th
                       key={col.label}
                       className={cn(
-                        "text-left px-3 py-2 font-semibold text-muted-foreground whitespace-nowrap border-b-[1.5px] border-r border-border last:border-r-0 group transition-colors",
+                        "text-left px-3 py-2 font-semibold text-muted-foreground whitespace-nowrap border-b border-r border-border last:border-r-0 group transition-colors text-[10px] uppercase tracking-wider",
                         col.sortable && !labelField && "cursor-pointer select-none hover:bg-muted/90",
                         activeColIdx === i && "bg-primary/[0.06]",
                         hoverColIdx === i && "bg-muted/90",
@@ -650,22 +652,22 @@ const HazardTable = () => {
                             <TooltipTrigger asChild>
                               <button
                                 onClick={() => openDrawer(h)}
-                                className="p-1.5 rounded border border-border bg-card text-foreground hover:bg-muted transition-colors"
+                                className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                               >
                                 <Eye className="w-3.5 h-3.5" />
                               </button>
                             </TooltipTrigger>
-                            <TooltipContent side="top" className="text-xs">Quick detail</TooltipContent>
+                            <TooltipContent side="top" className="text-[10px]">Quick detail</TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
                         <TooltipProvider delayDuration={200}>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <button className="p-1.5 rounded border border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 transition-colors">
+                              <button className="p-1 rounded text-primary/70 hover:text-primary hover:bg-primary/5 transition-colors">
                                 <GitBranch className="w-3.5 h-3.5" />
                               </button>
                             </TooltipTrigger>
-                            <TooltipContent side="top" className="text-xs">Evaluation trace</TooltipContent>
+                            <TooltipContent side="top" className="text-[10px]">Evaluation trace</TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
                       </div>
@@ -694,25 +696,25 @@ const HazardTable = () => {
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between mt-3 text-xs text-muted-foreground">
+      <div className="flex items-center justify-between mt-3 px-1 text-[11px] text-muted-foreground">
         <span>
-          Showing {((currentPage - 1) * PAGE_SIZE) + 1}–{Math.min(currentPage * PAGE_SIZE, filtered.length)} of {filtered.length} tasks
+          Showing <span className="font-medium text-foreground">{((currentPage - 1) * PAGE_SIZE) + 1}–{Math.min(currentPage * PAGE_SIZE, filtered.length)}</span> of {filtered.length} tasks
         </span>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5">
           <button
             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
             disabled={currentPage === 1}
-            className="p-1.5 rounded hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="p-1 rounded hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
-            <ChevronLeft className="w-4 h-4" />
+            <ChevronLeft className="w-3.5 h-3.5" />
           </button>
           {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
             <button
               key={page}
               onClick={() => setCurrentPage(page)}
               className={cn(
-                "w-7 h-7 rounded text-xs font-medium transition-colors",
-                page === currentPage ? "bg-primary text-primary-foreground" : "hover:bg-muted"
+                "w-6 h-6 rounded text-[11px] font-medium transition-colors",
+                page === currentPage ? "bg-primary text-primary-foreground" : "hover:bg-muted text-muted-foreground"
               )}
             >
               {page}
@@ -721,9 +723,9 @@ const HazardTable = () => {
           <button
             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
             disabled={currentPage === totalPages}
-            className="p-1.5 rounded hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="p-1 rounded hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
