@@ -8,7 +8,7 @@ import { AILabel, TBC_OPTIONS } from "@/types/hazard";
 import AIBadge from "./AIBadge";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { Lock, Timer, Check, User, Eye } from "lucide-react";
+import { Lock, Timer, Check, User, Eye, Pencil } from "lucide-react";
 
 interface AnnotationPopoverProps {
   label: AILabel;
@@ -222,7 +222,7 @@ const AnnotationPopover = ({ label, fieldName = "TBC", options, onApply, slaDead
             {/* Current editor banner */}
             {!isLocked && (
               <div className="px-3 py-1.5 bg-primary/[0.06] border-b border-border flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                <User className="w-3 h-3 text-primary shrink-0" />
+                <Pencil className="w-3 h-3 text-primary shrink-0" />
                 <span>Editing by <strong className="text-foreground">{currentUser}</strong></span>
               </div>
             )}
@@ -427,62 +427,68 @@ const AnnotationPopover = ({ label, fieldName = "TBC", options, onApply, slaDead
                 {/* RIGHT: Annotation History */}
                 <div className="flex-1 p-3 space-y-2">
                   <h4 className="text-xs font-semibold text-foreground">Annotation History</h4>
-                  <div className="text-[11px] space-y-1.5 bg-muted/30 rounded p-2.5 border border-border">
+               <div className="text-[11px] space-y-2 rounded border border-border overflow-hidden">
                     {/* Human locked */}
                     {label.human_label && !label.auto_confirmed && (
                       <>
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">Final Label</span>
-                          <span className="font-medium text-foreground">{label.human_label}</span>
+                        {/* Final Label - standout row */}
+                        <div className="flex items-center justify-between px-3 py-2.5 bg-primary/[0.06] border-b border-primary/10">
+                          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Final Label</span>
+                          <span className="font-semibold text-foreground text-[12px]">{label.human_label}</span>
                         </div>
-                        {label.annotated_by && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-muted-foreground">Confirmed by</span>
-                            <span className="font-medium text-foreground">{label.annotated_by}</span>
-                          </div>
-                        )}
-                        {label.annotated_at && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-muted-foreground">Timestamp</span>
-                            <span className="text-foreground">{new Date(label.annotated_at).toLocaleString()}</span>
-                          </div>
-                        )}
-                        {label.annotation_note && (
-                          <div className="pt-1 border-t border-border">
-                            <span className="text-muted-foreground block mb-0.5">Note</span>
-                            <p className="text-foreground italic">"{label.annotation_note}"</p>
-                          </div>
-                        )}
+                        <div className="px-3 pb-2 space-y-1.5">
+                          {label.annotated_by && (
+                            <div className="flex items-center justify-between">
+                              <span className="text-muted-foreground">Confirmed by</span>
+                              <span className="font-medium text-foreground">{label.annotated_by}</span>
+                            </div>
+                          )}
+                          {label.annotated_at && (
+                            <div className="flex items-center justify-between">
+                              <span className="text-muted-foreground">Timestamp</span>
+                              <span className="text-foreground">{new Date(label.annotated_at).toLocaleString()}</span>
+                            </div>
+                          )}
+                          {label.annotation_note && (
+                            <div className="pt-1.5 border-t border-border">
+                              <span className="text-muted-foreground block mb-0.5">Note</span>
+                              <p className="text-foreground italic">"{label.annotation_note}"</p>
+                            </div>
+                          )}
+                        </div>
                       </>
                     )}
                     {/* AI auto-confirmed */}
                     {label.auto_confirmed && (
                       <>
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">Final Label</span>
-                          <span className="font-medium text-foreground flex items-center gap-1">
-                            <span className="text-[9px] font-bold text-muted-foreground bg-muted px-1 rounded">AI</span>
+                        {/* Final Label - standout row */}
+                        <div className="flex items-center justify-between px-3 py-2.5 bg-primary/[0.06] border-b border-primary/10">
+                          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Final Label</span>
+                          <span className="font-semibold text-foreground text-[12px] flex items-center gap-1.5">
+                            <span className="text-[9px] font-bold text-primary-foreground bg-primary px-1.5 py-0.5 rounded">AI</span>
                             {label.human_label || label.ai_label}
                           </span>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">Confirmed by</span>
-                          <span className="text-foreground">System (AI Auto-Confirm)</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">Reason</span>
-                          <span className="text-foreground">SLA expired</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">Relevance score</span>
-                          <span className="text-foreground">{relevance}%</span>
-                        </div>
-                        {label.annotated_at && (
+                        <div className="px-3 pb-2 space-y-1.5">
                           <div className="flex items-center justify-between">
-                            <span className="text-muted-foreground">Timestamp</span>
-                            <span className="text-foreground">{new Date(label.annotated_at).toLocaleString()}</span>
+                            <span className="text-muted-foreground">Confirmed by</span>
+                            <span className="text-foreground">System (AI Auto-Confirm)</span>
                           </div>
-                        )}
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">Reason</span>
+                            <span className="text-foreground">AI confidence met threshold</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">Relevance score</span>
+                            <span className="text-foreground font-medium">{relevance}%</span>
+                          </div>
+                          {label.annotated_at && (
+                            <div className="flex items-center justify-between">
+                              <span className="text-muted-foreground">Timestamp</span>
+                              <span className="text-foreground">{new Date(label.annotated_at).toLocaleString()}</span>
+                            </div>
+                          )}
+                        </div>
                       </>
                     )}
                   </div>

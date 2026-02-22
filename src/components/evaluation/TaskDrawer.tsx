@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, ZoomIn, Lock, User } from "lucide-react";
+import { X, ZoomIn, Lock, User, Eye } from "lucide-react";
 import { HazardTask, AILabel } from "@/types/hazard";
 import StatusBadge from "./StatusBadge";
 import { Progress } from "@/components/ui/progress";
@@ -130,39 +130,49 @@ const AnnotationRow = ({ title, label }: { title: string; label: AILabel }) => {
 
   if (isAutoConfirmed) {
     return (
-      <div className="p-2 rounded border border-border bg-muted/20">
-        <div className="flex items-center gap-1.5 text-[11px] font-medium text-foreground">
-          <span className="text-[9px] font-bold text-muted-foreground bg-muted px-1 rounded">AI</span>
-          <span className="flex-1">{title}: {displayLabel}</span>
-          <Lock className="w-3 h-3 text-primary shrink-0" />
+      <div className="rounded border border-border overflow-hidden">
+        <div className="flex items-center justify-between px-2.5 py-2 bg-primary/[0.06] border-b border-primary/10">
+          <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">Final Label</span>
+          <span className="text-[11px] font-semibold text-foreground flex items-center gap-1.5">
+            <span className="text-[8px] font-bold text-primary-foreground bg-primary px-1 py-0.5 rounded">AI</span>
+            {displayLabel}
+          </span>
         </div>
-        <p className="text-[10px] text-muted-foreground mt-0.5">
-          Confirmed by: System (AI Auto-Confirm) · Relevance: {relevance}%
-        </p>
-        {label.annotated_at && (
-          <p className="text-[10px] text-muted-foreground">
-            {new Date(label.annotated_at).toLocaleString()}
-          </p>
-        )}
+        <div className="px-2.5 py-1.5 space-y-0.5">
+          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+            <Eye className="w-3 h-3 shrink-0" />
+            <span>Confirmed by: System (AI Auto-Confirm) · Reason: AI confidence met threshold · Relevance: {relevance}%</span>
+          </div>
+          {label.annotated_at && (
+            <p className="text-[10px] text-muted-foreground pl-[18px]">
+              {new Date(label.annotated_at).toLocaleString()}
+            </p>
+          )}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="p-2 rounded border border-border bg-muted/20">
-      <div className="flex items-center gap-1.5 text-[11px] font-medium text-foreground">
-        <User className="w-3 h-3 text-muted-foreground shrink-0" />
-        <span className="flex-1">{title}: {displayLabel}</span>
-        <Lock className="w-3 h-3 text-primary shrink-0" />
+    <div className="rounded border border-border overflow-hidden">
+      <div className="flex items-center justify-between px-2.5 py-2 bg-primary/[0.06] border-b border-primary/10">
+        <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">Final Label</span>
+        <span className="text-[11px] font-semibold text-foreground flex items-center gap-1.5">
+          <User className="w-3 h-3 text-muted-foreground shrink-0" />
+          {displayLabel}
+        </span>
       </div>
-      {label.annotated_by && (
-        <p className="text-[10px] text-muted-foreground mt-0.5">
-          Annotated by {label.annotated_by} · {label.annotated_at ? new Date(label.annotated_at).toLocaleString() : ""}
-        </p>
-      )}
-      {label.annotation_note && (
-        <p className="text-[10px] text-muted-foreground italic mt-0.5">"{label.annotation_note}"</p>
-      )}
+      <div className="px-2.5 py-1.5 space-y-0.5">
+        {label.annotated_by && (
+          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+            <Eye className="w-3 h-3 shrink-0" />
+            <span>Annotated by {label.annotated_by} · {label.annotated_at ? new Date(label.annotated_at).toLocaleString() : ""}</span>
+          </div>
+        )}
+        {label.annotation_note && (
+          <p className="text-[10px] text-muted-foreground italic pl-[18px]">"{label.annotation_note}"</p>
+        )}
+      </div>
     </div>
   );
 };
