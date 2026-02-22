@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
-import { Eye, GitBranch, ArrowUp, ArrowDown, ChevronsUpDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { Eye, Brain, ArrowUp, ArrowDown, ChevronsUpDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { HazardTask, AILabel } from "@/types/hazard";
 import { mockHazards } from "@/data/mockHazards";
 import AnnotationPopover from "./AnnotationPopover";
@@ -651,12 +651,10 @@ const HazardTable = () => {
                           onClick={() => openDrawer(h)}
                           className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-border bg-card text-[10px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted hover:border-muted-foreground/20 transition-all shadow-sm"
                         >
-                          <Eye className="w-3 h-3" />
-                          View
+                          <Eye className="w-3.5 h-3.5" />
                         </button>
                         <button className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-primary/20 bg-primary/5 text-[10px] font-medium text-primary hover:bg-primary/10 hover:border-primary/30 transition-all shadow-sm">
-                          <GitBranch className="w-3 h-3" />
-                          Trace
+                          <Brain className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </td>
