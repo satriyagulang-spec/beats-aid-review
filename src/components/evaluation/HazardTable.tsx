@@ -47,14 +47,16 @@ const TruncatedCell = ({ text, maxWidth = "max-w-[130px]" }: { text: string; max
 
 /** Image cell with hover preview */
 const ImageCell = ({ src }: { src: string }) => (
-  <Popover>
-    <PopoverTrigger asChild>
-      <img src={src} alt="hazard" className="w-8 h-8 rounded object-cover cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all" />
-    </PopoverTrigger>
-    <PopoverContent side="right" className="w-64 p-1" align="center">
-      <img src={src} alt="hazard preview" className="w-full rounded object-cover" />
-    </PopoverContent>
-  </Popover>
+  <TooltipProvider delayDuration={200}>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <img src={src} alt="hazard" className="w-9 h-9 rounded-md object-cover cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all shadow-sm" />
+      </TooltipTrigger>
+      <TooltipContent side="right" className="p-1 w-[220px]" align="center">
+        <img src={src} alt="hazard preview" className="w-full rounded-md object-cover" />
+      </TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
 );
 
 // Sort state types
@@ -513,7 +515,7 @@ const HazardTable = () => {
                   return cn(
                     cellClass(colIdx),
                     "whitespace-nowrap transition-all duration-200",
-                    isThisEditing && "bg-primary/[0.12] ring-2 ring-inset ring-primary/40 shadow-[inset_0_-2px_0_hsl(var(--primary))] relative z-10",
+                    isThisEditing && "bg-primary/[0.06] ring-1 ring-inset ring-primary/20 shadow-[inset_0_-2px_0_hsl(var(--primary))] relative z-10",
                     isOtherEditing && isBeingEdited && "opacity-40"
                   );
                 };
