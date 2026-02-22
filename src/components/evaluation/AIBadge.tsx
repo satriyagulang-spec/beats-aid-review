@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Clock, Lock, User, Eye, Pencil } from "lucide-react";
+import { Clock, Lock, User, Eye, SquarePen } from "lucide-react";
 import { AILabel } from "@/types/hazard";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -51,8 +51,8 @@ const AIBadge = ({ label, onClick, slaDeadline, disabled, editingBy }: AIBadgePr
   const relevance = topCandidate?.relevance ?? 0;
   const candidates = label.candidates?.slice(0, 3) ?? [];
 
-  // Icon for locked states: Eye (view-only) vs Pencil (editable)
-  const ActionIcon = isLocked ? Eye : Pencil;
+  // Icon for locked states: Eye (view-only) vs SquarePen (editable)
+  const ActionIcon = isLocked ? Eye : SquarePen;
 
   if (!displayLabel) {
     return (
@@ -158,7 +158,7 @@ const AIBadge = ({ label, onClick, slaDeadline, disabled, editingBy }: AIBadgePr
             <div className="flex items-center gap-1.5 w-full">
               <span className={cn(TAG_BASE, "text-muted-foreground bg-muted")}>AI</span>
               <span className="truncate font-medium text-left flex-1">{displayLabel}</span>
-              <Pencil className="w-3 h-3 text-muted-foreground/50 shrink-0" />
+              <SquarePen className="w-3 h-3 text-muted-foreground/40 shrink-0" />
             </div>
             <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground pl-[26px]">
               <span>{relevance}%</span>

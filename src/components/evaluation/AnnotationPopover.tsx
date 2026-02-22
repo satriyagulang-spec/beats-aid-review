@@ -8,7 +8,7 @@ import { AILabel, TBC_OPTIONS } from "@/types/hazard";
 import AIBadge from "./AIBadge";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { Lock, Timer, Check, User, Eye, Pencil } from "lucide-react";
+import { Lock, Timer, Check, User, Eye, SquarePen } from "lucide-react";
 
 interface AnnotationPopoverProps {
   label: AILabel;
@@ -222,7 +222,7 @@ const AnnotationPopover = ({ label, fieldName = "TBC", options, onApply, slaDead
             {/* Current editor banner */}
             {!isLocked && (
               <div className="px-3 py-1.5 bg-primary/[0.06] border-b border-border flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                <Pencil className="w-3 h-3 text-primary shrink-0" />
+                <SquarePen className="w-3 h-3 text-primary shrink-0" />
                 <span>Editing by <strong className="text-foreground">{currentUser}</strong></span>
               </div>
             )}
@@ -404,22 +404,32 @@ const AnnotationPopover = ({ label, fieldName = "TBC", options, onApply, slaDead
                   <h4 className="text-xs font-semibold text-foreground">AI Candidates</h4>
                   <div className="space-y-1.5">
                     {candidates.map((c, i) => (
-                      <div key={i} className="flex items-center gap-2 p-2 rounded border border-border bg-muted/20">
-                        <span className="text-[10px] font-bold text-muted-foreground w-4 shrink-0 text-center">{i + 1}</span>
-                        <div className="w-3.5 shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-1">
-                            <span className="text-[11px] font-medium text-foreground truncate">{c.label}</span>
-                            <span className={cn("text-[10px] font-semibold shrink-0", c.relevance >= 70 ? "text-status-complete" : c.relevance >= 50 ? "text-foreground" : "text-destructive")}>
-                              {c.relevance}%
-                            </span>
-                          </div>
-                          <Progress value={c.relevance} className="h-1 mt-1" />
-                          {i === 0 && (
-                            <span className="text-[9px] text-muted-foreground mt-0.5 block">Top AI Prediction</span>
-                          )}
-                        </div>
-                      </div>
+                      <TooltipProvider key={i} delayDuration={200}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex items-center gap-2 p-2 rounded border border-border bg-muted/20 cursor-default hover:bg-muted/40 transition-colors">
+                              <span className="text-[10px] font-bold text-muted-foreground w-4 shrink-0 text-center">{i + 1}</span>
+                              <div className="w-3.5 shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-1">
+                                  <span className="text-[11px] font-medium text-foreground truncate">{c.label}</span>
+                                  <span className={cn("text-[10px] font-semibold shrink-0", c.relevance >= 70 ? "text-status-complete" : c.relevance >= 50 ? "text-foreground" : "text-destructive")}>
+                                    {c.relevance}%
+                                  </span>
+                                </div>
+                                <Progress value={c.relevance} className="h-1 mt-1" />
+                                {i === 0 && (
+                                  <span className="text-[9px] text-muted-foreground mt-0.5 block">Top AI Prediction</span>
+                                )}
+                              </div>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent side="left" className="max-w-[280px] text-[11px] p-3 leading-relaxed">
+                            <p className="font-semibold mb-1">AI Reasoning</p>
+                            <p className="text-muted-foreground">{c.reasoning}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     ))}
                   </div>
                 </div>
@@ -432,9 +442,9 @@ const AnnotationPopover = ({ label, fieldName = "TBC", options, onApply, slaDead
                     {label.human_label && !label.auto_confirmed && (
                       <>
                         {/* Final Label - standout row */}
-                        <div className="flex items-center justify-between px-3 py-2.5 bg-primary/[0.06] border-b border-primary/10">
-                          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Final Label</span>
-                          <span className="font-semibold text-foreground text-[12px]">{label.human_label}</span>
+                        <div className="flex items-center justify-between px-3 py-3 bg-primary/[0.08] border-b border-primary/15">
+                          <span className="text-[10px] font-bold text-primary uppercase tracking-widest">Final Label</span>
+                          <span className="font-bold text-foreground text-[13px]">{label.human_label}</span>
                         </div>
                         <div className="px-3 pb-2 space-y-1.5">
                           {label.annotated_by && (
@@ -462,9 +472,9 @@ const AnnotationPopover = ({ label, fieldName = "TBC", options, onApply, slaDead
                     {label.auto_confirmed && (
                       <>
                         {/* Final Label - standout row */}
-                        <div className="flex items-center justify-between px-3 py-2.5 bg-primary/[0.06] border-b border-primary/10">
-                          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Final Label</span>
-                          <span className="font-semibold text-foreground text-[12px] flex items-center gap-1.5">
+                        <div className="flex items-center justify-between px-3 py-3 bg-primary/[0.08] border-b border-primary/15">
+                          <span className="text-[10px] font-bold text-primary uppercase tracking-widest">Final Label</span>
+                          <span className="font-bold text-foreground text-[13px] flex items-center gap-1.5">
                             <span className="text-[9px] font-bold text-primary-foreground bg-primary px-1.5 py-0.5 rounded">AI</span>
                             {label.human_label || label.ai_label}
                           </span>
