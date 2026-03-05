@@ -4,7 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AILabel, TBC_OPTIONS } from "@/types/hazard";
+import { AILabel, TBC_OPTIONS, getCandidateLines } from "@/types/hazard";
 import AIBadge from "./AIBadge";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -207,7 +207,7 @@ const AnnotationPopover = ({ label, fieldName = "TBC", options, onApply, slaDead
     <>
       <div className="relative inline-block" ref={badgeRef}>
         <div onClick={open ? handleClose : handleOpen} className={disabled ? "cursor-not-allowed" : "cursor-pointer"}>
-          <AIBadge label={label} slaDeadline={slaDeadline} disabled={disabled} editingBy={editingBy} />
+          <AIBadge label={label} slaDeadline={slaDeadline} disabled={disabled} editingBy={editingBy} fieldType={fieldName.toLowerCase() as "tbc" | "pspp" | "gr"} />
         </div>
       </div>
 
@@ -281,7 +281,18 @@ const AnnotationPopover = ({ label, fieldName = "TBC", options, onApply, slaDead
                                 )}
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center justify-between gap-1">
-                                    <span className="text-[11px] font-medium text-foreground truncate">{c.label}</span>
+                                    {(() => {
+                                      const fieldType = fieldName.toLowerCase() as "tbc" | "pspp" | "gr";
+                                      const lines = getCandidateLines(c, fieldType);
+                                      return (
+                                        <div className="flex-1 min-w-0">
+                                          <span className="text-[11px] font-medium text-foreground truncate block">{lines.primary}</span>
+                                          {lines.secondary && (
+                                            <span className="text-[9px] text-muted-foreground truncate block">{lines.secondary}</span>
+                                          )}
+                                        </div>
+                                      );
+                                    })()}
                                     <span className={cn("text-[10px] font-semibold shrink-0", c.relevance >= 70 ? "text-status-complete" : c.relevance >= 50 ? "text-foreground" : "text-destructive")}>
                                       {c.relevance}%
                                     </span>
@@ -412,7 +423,18 @@ const AnnotationPopover = ({ label, fieldName = "TBC", options, onApply, slaDead
                               <div className="w-3.5 shrink-0" />
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center justify-between gap-1">
-                                  <span className="text-[11px] font-medium text-foreground truncate">{c.label}</span>
+                                  {(() => {
+                                    const fieldType = fieldName.toLowerCase() as "tbc" | "pspp" | "gr";
+                                    const lines = getCandidateLines(c, fieldType);
+                                    return (
+                                      <div className="flex-1 min-w-0">
+                                        <span className="text-[11px] font-medium text-foreground truncate block">{lines.primary}</span>
+                                        {lines.secondary && (
+                                          <span className="text-[9px] text-muted-foreground truncate block">{lines.secondary}</span>
+                                        )}
+                                      </div>
+                                    );
+                                  })()}
                                   <span className={cn("text-[10px] font-semibold shrink-0", c.relevance >= 70 ? "text-status-complete" : c.relevance >= 50 ? "text-foreground" : "text-destructive")}>
                                     {c.relevance}%
                                   </span>
@@ -442,10 +464,29 @@ const AnnotationPopover = ({ label, fieldName = "TBC", options, onApply, slaDead
                     {label.human_label && !label.auto_confirmed && (
                       <>
                         {/* Final Label - standout row */}
-                        <div className="flex items-center justify-between px-3 py-3 bg-primary/[0.08] border-b border-primary/15">
-                          <span className="text-[10px] font-bold text-primary uppercase tracking-widest">Final Label</span>
-                          <span className="font-bold text-foreground text-[13px]">{label.human_label}</span>
-                        </div>
+                         <div className="flex items-center justify-between px-3 py-3 bg-primary/[0.08] border-b border-primary/15">
+                           <span className="text-[10px] font-bold text-primary uppercase tracking-widest">Final Label</span>
+                           <div className="text-right">
+                             <span className="font-bold text-foreground text-[13px] block">{(() => {
+                               const fieldType = fieldName.toLowerCase() as "tbc" | "pspp" | "gr";
+                               const topCandidate = label.candidates?.[0];
+                               if (topCandidate) {
+                                 const lines = getCandidateLines(topCandidate, fieldType);
+                                 return lines.primary;
+                               }
+                               return label.human_label;
+                             })()}</span>
+                             {(() => {
+                               const fieldType = fieldName.toLowerCase() as "tbc" | "pspp" | "gr";
+                               const topCandidate = label.candidates?.[0];
+                               if (topCandidate) {
+                                 const lines = getCandidateLines(topCandidate, fieldType);
+                                 if (lines.secondary) return <span className="text-[10px] text-muted-foreground block">{lines.secondary}</span>;
+                               }
+                               return null;
+                             })()}
+                           </div>
+                         </div>
                         <div className="px-3 pb-2 space-y-1.5">
                           {label.annotated_by && (
                             <div className="flex items-center justify-between">
@@ -472,13 +513,32 @@ const AnnotationPopover = ({ label, fieldName = "TBC", options, onApply, slaDead
                     {label.auto_confirmed && (
                       <>
                         {/* Final Label - standout row */}
-                        <div className="flex items-center justify-between px-3 py-3 bg-primary/[0.08] border-b border-primary/15">
-                          <span className="text-[10px] font-bold text-primary uppercase tracking-widest">Final Label</span>
-                          <span className="font-bold text-foreground text-[13px] flex items-center gap-1.5">
-                            <span className="text-[9px] font-bold text-primary-foreground bg-primary px-1.5 py-0.5 rounded">AI</span>
-                            {label.human_label || label.ai_label}
-                          </span>
-                        </div>
+                         <div className="flex items-center justify-between px-3 py-3 bg-primary/[0.08] border-b border-primary/15">
+                           <span className="text-[10px] font-bold text-primary uppercase tracking-widest">Final Label</span>
+                           <div className="text-right">
+                             <span className="font-bold text-foreground text-[13px] flex items-center gap-1.5 justify-end">
+                               <span className="text-[9px] font-bold text-primary-foreground bg-primary px-1.5 py-0.5 rounded">AI</span>
+                               {(() => {
+                                 const fieldType = fieldName.toLowerCase() as "tbc" | "pspp" | "gr";
+                                 const topCandidate = label.candidates?.[0];
+                                 if (topCandidate) {
+                                   const lines = getCandidateLines(topCandidate, fieldType);
+                                   return lines.primary;
+                                 }
+                                 return label.human_label || label.ai_label;
+                               })()}
+                             </span>
+                             {(() => {
+                               const fieldType = fieldName.toLowerCase() as "tbc" | "pspp" | "gr";
+                               const topCandidate = label.candidates?.[0];
+                               if (topCandidate) {
+                                 const lines = getCandidateLines(topCandidate, fieldType);
+                                 if (lines.secondary) return <span className="text-[10px] text-muted-foreground block">{lines.secondary}</span>;
+                               }
+                               return null;
+                             })()}
+                           </div>
+                         </div>
                         <div className="px-3 pb-2 space-y-1.5">
                           <div className="flex items-center justify-between">
                             <span className="text-muted-foreground">Confirmed by</span>

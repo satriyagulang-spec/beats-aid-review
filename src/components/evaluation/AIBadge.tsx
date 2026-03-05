@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Clock, Lock, User, Eye, SquarePen } from "lucide-react";
-import { AILabel } from "@/types/hazard";
+import { AILabel, getCandidateLines } from "@/types/hazard";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -10,6 +10,7 @@ interface AIBadgeProps {
   slaDeadline?: string;
   disabled?: boolean;
   editingBy?: string | null;
+  fieldType?: "tbc" | "pspp" | "gr";
 }
 
 function getTimeRemaining(deadline: string): { hours: number; minutes: number; text: string } {
@@ -27,7 +28,7 @@ function getTimeRemaining(deadline: string): { hours: number; minutes: number; t
 const BADGE_BASE = "inline-flex flex-col items-start gap-0 px-2.5 py-1.5 rounded border text-[11px] font-normal w-[160px] min-w-[160px]";
 const TAG_BASE = "text-[9px] font-bold shrink-0 px-1 rounded";
 
-const AIBadge = ({ label, onClick, slaDeadline, disabled, editingBy }: AIBadgeProps) => {
+const AIBadge = ({ label, onClick, slaDeadline, disabled, editingBy, fieldType = "tbc" }: AIBadgeProps) => {
   const [timeText, setTimeText] = useState("");
   const [hoursLeft, setHoursLeft] = useState(999);
 
@@ -50,6 +51,9 @@ const AIBadge = ({ label, onClick, slaDeadline, disabled, editingBy }: AIBadgePr
   const topCandidate = label.candidates?.[0];
   const relevance = topCandidate?.relevance ?? 0;
   const candidates = label.candidates?.slice(0, 3) ?? [];
+
+  // Get two-line display for top candidate
+  const topLines = topCandidate ? getCandidateLines(topCandidate, fieldType) : null;
 
   // Icon for locked states: Eye (view-only) vs SquarePen (editable)
   const ActionIcon = isLocked ? Eye : SquarePen;
@@ -74,15 +78,19 @@ const AIBadge = ({ label, onClick, slaDeadline, disabled, editingBy }: AIBadgePr
             <div onClick={disabled ? undefined : onClick} className={cn(BADGE_BASE, "border-border bg-muted/40 text-foreground", disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer")}>
               <div className="flex items-center gap-1.5 w-full">
                 <span className={cn(TAG_BASE, "text-muted-foreground bg-muted")}>AI</span>
-                <span className="truncate font-medium text-left flex-1">{displayLabel}</span>
+                <span className="truncate font-medium text-left flex-1">{topLines?.primary || displayLabel}</span>
                 <Lock className="w-3 h-3 text-primary shrink-0" />
               </div>
+              {topLines?.secondary && (
+                <span className="text-[9px] text-muted-foreground pl-[26px] truncate block w-full text-left">{topLines.secondary}</span>
+              )}
               <span className="text-[9px] text-muted-foreground pl-[26px]">Auto-confirmed · {relevance}%</span>
             </div>
           </TooltipTrigger>
           <TooltipContent side="top" className="max-w-[260px] text-xs p-2.5">
             <div className="space-y-0.5">
-              <p className="font-semibold text-[11px]">Final Label: {displayLabel}</p>
+              <p className="font-semibold text-[11px]">Final Label: {topLines?.primary || displayLabel}</p>
+              {topLines?.secondary && <p className="text-muted-foreground text-[10px]">{topLines.secondary}</p>}
               <p className="text-muted-foreground text-[10px]">Confirmed by: System (AI Auto-Confirm)</p>
               <p className="text-muted-foreground text-[10px]">Reason: AI confidence met threshold</p>
               <p className="text-muted-foreground text-[10px]">Relevance score: {relevance}%</p>
@@ -105,15 +113,19 @@ const AIBadge = ({ label, onClick, slaDeadline, disabled, editingBy }: AIBadgePr
             <div onClick={disabled ? undefined : onClick} className={cn(BADGE_BASE, "border-border bg-muted/40 text-foreground", disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer")}>
               <div className="flex items-center gap-1.5 w-full">
                 <User className="w-3 h-3 text-muted-foreground shrink-0" />
-                <span className="truncate font-medium text-left flex-1">{displayLabel}</span>
+                <span className="truncate font-medium text-left flex-1">{topLines?.primary || displayLabel}</span>
                 <Lock className="w-3 h-3 text-primary shrink-0" />
               </div>
+              {topLines?.secondary && (
+                <span className="text-[9px] text-muted-foreground pl-[18px] truncate block w-full text-left">{topLines.secondary}</span>
+              )}
               <span className="text-[9px] text-muted-foreground pl-[18px]">Annotated by Human</span>
             </div>
           </TooltipTrigger>
           <TooltipContent side="top" className="max-w-[260px] text-xs p-2.5">
             <div className="space-y-0.5">
-              <p className="font-semibold text-[11px]">Final Label: {displayLabel}</p>
+              <p className="font-semibold text-[11px]">Final Label: {topLines?.primary || displayLabel}</p>
+              {topLines?.secondary && <p className="text-muted-foreground text-[10px]">{topLines.secondary}</p>}
               {label.annotated_by && (
                 <p className="text-muted-foreground text-[10px]">Confirmed by: {label.annotated_by}</p>
               )}
@@ -133,15 +145,19 @@ const AIBadge = ({ label, onClick, slaDeadline, disabled, editingBy }: AIBadgePr
   const candidatesTooltip = (
     <div className="space-y-1.5">
       <p className="font-semibold text-[11px] mb-1">Top AI Candidates</p>
-      {candidates.map((c, i) => (
-        <div key={i} className="flex items-center justify-between gap-3">
-          <span className="text-[11px]">
-            <span className="text-muted-foreground mr-1">#{i + 1}</span>
-            {c.label}
-          </span>
-          <span className="text-[10px] font-semibold shrink-0">{c.relevance}%</span>
-        </div>
-      ))}
+      {candidates.map((c, i) => {
+        const cLines = getCandidateLines(c, fieldType);
+        return (
+          <div key={i} className="flex items-start justify-between gap-3">
+            <div className="text-[11px] min-w-0">
+              <span className="text-muted-foreground mr-1">#{i + 1}</span>
+              <span>{cLines.primary}</span>
+              {cLines.secondary && <span className="block text-[9px] text-muted-foreground pl-4">{cLines.secondary}</span>}
+            </div>
+            <span className="text-[10px] font-semibold shrink-0">{c.relevance}%</span>
+          </div>
+        );
+      })}
       {slaDeadline && <p className="text-muted-foreground text-[10px] pt-1 border-t border-border">⏱ {timeText}</p>}
       {editingBy && <p className="text-muted-foreground text-[10px] pt-1 border-t border-border">🔒 Being edited by {editingBy}</p>}
     </div>
@@ -157,9 +173,12 @@ const AIBadge = ({ label, onClick, slaDeadline, disabled, editingBy }: AIBadgePr
           >
             <div className="flex items-center gap-1.5 w-full">
               <span className={cn(TAG_BASE, "text-muted-foreground bg-muted")}>AI</span>
-              <span className="truncate font-medium text-left flex-1">{displayLabel}</span>
+              <span className="truncate font-medium text-left flex-1">{topLines?.primary || displayLabel}</span>
               <SquarePen className="w-3 h-3 text-muted-foreground/40 shrink-0" />
             </div>
+            {topLines?.secondary && (
+              <span className="text-[9px] text-muted-foreground pl-[26px] truncate block w-full text-left">{topLines.secondary}</span>
+            )}
             <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground pl-[26px]">
               <span>{relevance}%</span>
               {slaDeadline && (
