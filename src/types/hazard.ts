@@ -1,7 +1,26 @@
 export interface AICandidate {
   label: string;
+  category?: string;
   relevance: number; // 0-100
   reasoning: string;
+}
+
+/** Get primary/secondary text for a candidate based on field type */
+export function getCandidateLines(
+  candidate: AICandidate,
+  fieldType: "tbc" | "pspp" | "gr"
+): { primary: string; secondary: string | null } {
+  if (fieldType === "pspp") {
+    return {
+      primary: candidate.label,
+      secondary: candidate.category || null,
+    };
+  }
+  // GR and TBC: category first, label second
+  return {
+    primary: candidate.category || candidate.label,
+    secondary: candidate.category ? candidate.label : null,
+  };
 }
 
 export interface AILabel {

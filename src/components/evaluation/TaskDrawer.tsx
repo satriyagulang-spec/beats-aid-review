@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { X, ZoomIn, Lock, User, Eye } from "lucide-react";
-import { HazardTask, AILabel } from "@/types/hazard";
+import { HazardTask, AILabel, getCandidateLines } from "@/types/hazard";
 import StatusBadge from "./StatusBadge";
 import { Progress } from "@/components/ui/progress";
 
@@ -79,16 +79,22 @@ const TaskDrawer = ({ task, open, onClose }: TaskDrawerProps) => {
           <section>
             <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">AI TBC Candidates</h4>
             <div className="space-y-2">
-              {tbcCandidates.map((c, i) => (
+              {tbcCandidates.map((c, i) => {
+                const lines = getCandidateLines(c, "tbc");
+                return (
                 <div key={i} className="p-2.5 rounded border border-border bg-muted/30">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-[11px] font-medium text-foreground">{c.label}</span>
-                    <span className="text-[10px] font-medium text-muted-foreground">{c.relevance}%</span>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-[11px] font-medium text-foreground block truncate">{lines.primary}</span>
+                      {lines.secondary && <span className="text-[9px] text-muted-foreground block truncate">{lines.secondary}</span>}
+                    </div>
+                    <span className="text-[10px] font-medium text-muted-foreground shrink-0 ml-2">{c.relevance}%</span>
                   </div>
                   <Progress value={c.relevance} className="h-1 mb-1" />
                   <p className="text-[10px] text-muted-foreground leading-tight">{c.reasoning}</p>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </section>
 
@@ -97,9 +103,9 @@ const TaskDrawer = ({ task, open, onClose }: TaskDrawerProps) => {
             <section>
               <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Annotation History</h4>
               <div className="space-y-1.5">
-                {task.tbc.locked && <AnnotationRow title="TBC" label={task.tbc} />}
-                {task.pspp.locked && <AnnotationRow title="PSPP" label={task.pspp} />}
-                {task.gr.locked && <AnnotationRow title="GR" label={task.gr} />}
+                {task.tbc.locked && <AnnotationRow title="TBC" label={task.tbc} fieldType="tbc" />}
+                {task.pspp.locked && <AnnotationRow title="PSPP" label={task.pspp} fieldType="pspp" />}
+                {task.gr.locked && <AnnotationRow title="GR" label={task.gr} fieldType="gr" />}
               </div>
             </section>
           )}
@@ -123,20 +129,25 @@ const InfoRow = ({ label, value }: { label: string; value: string }) => (
   </div>
 );
 
-const AnnotationRow = ({ title, label }: { title: string; label: AILabel }) => {
+const AnnotationRow = ({ title, label, fieldType }: { title: string; label: AILabel; fieldType: "tbc" | "pspp" | "gr" }) => {
   const isAutoConfirmed = label.auto_confirmed;
-  const displayLabel = label.human_label || label.ai_label;
-  const relevance = label.candidates?.[0]?.relevance ?? 0;
+  const topCandidate = label.candidates?.[0];
+  const relevance = topCandidate?.relevance ?? 0;
+  const lines = topCandidate ? getCandidateLines(topCandidate, fieldType) : null;
+  const displayPrimary = lines?.primary || label.human_label || label.ai_label;
 
   if (isAutoConfirmed) {
     return (
       <div className="rounded border border-border overflow-hidden">
         <div className="flex items-center justify-between px-2.5 py-2 bg-primary/[0.06] border-b border-primary/10">
           <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">Final Label</span>
-          <span className="text-[11px] font-semibold text-foreground flex items-center gap-1.5">
-            <span className="text-[8px] font-bold text-primary-foreground bg-primary px-1 py-0.5 rounded">AI</span>
-            {displayLabel}
-          </span>
+          <div className="text-right">
+            <span className="text-[11px] font-semibold text-foreground flex items-center gap-1.5 justify-end">
+              <span className="text-[8px] font-bold text-primary-foreground bg-primary px-1 py-0.5 rounded">AI</span>
+              {displayPrimary}
+            </span>
+            {lines?.secondary && <span className="text-[9px] text-muted-foreground block">{lines.secondary}</span>}
+          </div>
         </div>
         <div className="px-2.5 py-1.5 space-y-0.5">
           <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
@@ -157,10 +168,13 @@ const AnnotationRow = ({ title, label }: { title: string; label: AILabel }) => {
     <div className="rounded border border-border overflow-hidden">
       <div className="flex items-center justify-between px-2.5 py-2 bg-primary/[0.06] border-b border-primary/10">
         <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">Final Label</span>
-        <span className="text-[11px] font-semibold text-foreground flex items-center gap-1.5">
-          <User className="w-3 h-3 text-muted-foreground shrink-0" />
-          {displayLabel}
-        </span>
+        <div className="text-right">
+          <span className="text-[11px] font-semibold text-foreground flex items-center gap-1.5 justify-end">
+            <User className="w-3 h-3 text-muted-foreground shrink-0" />
+            {displayPrimary}
+          </span>
+          {lines?.secondary && <span className="text-[9px] text-muted-foreground block">{lines.secondary}</span>}
+        </div>
       </div>
       <div className="px-2.5 py-1.5 space-y-0.5">
         {label.annotated_by && (
